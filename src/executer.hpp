@@ -65,7 +65,7 @@ public:
       }
       reg.write(inst.rd, ans);
     } else if (inst.opcode == 0x03) {
-      uint32_t addr = inst.rs1 + inst.imm;
+      uint32_t addr = reg.read(inst.rs1) + inst.imm;
       uint32_t ans = 0;
       if (inst.funct3 == 0x0) {
         ans = mem.load_byte(addr);
@@ -80,7 +80,7 @@ public:
       }
       reg.write(inst.rd, ans);
     } else if (inst.opcode == 0x23) {
-      uint32_t addr = inst.rs1 + inst.imm;
+      uint32_t addr = reg.read(inst.rs1) + inst.imm;
       uint32_t val = reg.read(inst.rs2);
       if (inst.funct3 == 0x0) {
         mem.store_byte(addr, val & 0xFF);

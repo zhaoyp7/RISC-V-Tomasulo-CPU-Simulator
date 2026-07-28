@@ -71,8 +71,8 @@ public:
   }
   void store_word(uint32_t addr, uint32_t val) {
     mem[addr] = (val & 0xFF);
-    mem[addr] = (val >> 8) & 0xFF;
-    mem[addr] = (val >> 16) & 0xFF;
-    mem[addr] = (val >> 24);
+    mem[addr + 1] = (val >> 8) & 0xFF;
+    mem[addr + 2] = (val >> 16) & 0xFF;
+    mem[addr + 3] = (val >> 24);
   }
 };

@@ -19,18 +19,18 @@ public:
   DecodedIns decode(uint32_t addr) const {
     DecodedIns res;
     res.opcode = (addr & 0x7F);
-    uint32_t tmp = (addr >> 11) & 0x7;
+    uint32_t tmp = (addr >> 12) & 0x7;
     if (res.opcode == 0x33) {
       res.type = InsType::R;
       res.rd = (addr >> 7) & 0x1F;
-      res.funct3 = (addr >> 11) & 0x7;
+      res.funct3 = (addr >> 12) & 0x7;
       res.rs1 = (addr >> 15) & 0x1F;
       res.rs2 = (addr >> 20) & 0x1F;
       res.funct7 = (addr >> 25);
     } else if (res.opcode == 0x13 && (tmp == 0x1 || tmp == 0x5)) {
       res.type = InsType::Istar;
       res.rd = (addr >> 7) & 0x1F;
-      res.funct3 = (addr >> 11) & 0x7;
+      res.funct3 = (addr >> 12) & 0x7;
       res.rs1 = (addr >> 15) & 0x1F;
       res.imm = (addr >> 20) & 0x1F;
       res.funct7 = (addr >> 25);
@@ -38,19 +38,19 @@ public:
                res.opcode == 0x73) {
       res.type = InsType::I;
       res.rd = (addr >> 7) & 0x1F;
-      res.funct3 = (addr >> 11) & 0x7;
+      res.funct3 = (addr >> 12) & 0x7;
       res.rs1 = (addr >> 15) & 0x1F;
       res.imm = (int32_t(addr) >> 20);
     } else if (res.opcode == 0x23) {
       res.type = InsType::S;
-      res.funct3 = (addr >> 11) & 0x7;
+      res.funct3 = (addr >> 12) & 0x7;
       res.rs1 = (addr >> 15) & 0x1F;
       res.rs2 = (addr >> 20) & 0x1F;
       res.imm = (addr >> 7) & 0x1F;
       res.imm |= (int32_t(addr) >> 25) << 5;
     } else if (res.opcode == 0x63) {
       res.type = InsType::B;
-      res.funct3 = (addr >> 11) & 0x7;
+      res.funct3 = (addr >> 12) & 0x7;
       res.rs1 = (addr >> 15) & 0x1F;
       res.rs2 = (addr >> 20) & 0x1F;
       res.imm = (int32_t(addr) >> 31) << 12;
