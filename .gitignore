@@ -8,3 +8,5 @@
 
 # JetBrains IDE (CLion / IDEA) 缓存
 .idea/
+
+main
