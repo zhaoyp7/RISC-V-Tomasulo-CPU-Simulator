@@ -6,12 +6,12 @@ set(CMAKE_CXX_STANDARD 20)
 add_compile_options(-Wall)
 add_compile_options(-Ofast)
 
-add_executable(code 
+add_executable(naive-code 
 
-  src/decoder.hpp
-  src/memory.hpp
-  src/executer.hpp
-  src/regfile.hpp
+  naive-src/decoder.hpp
+  naive-src/memory.hpp
+  naive-src/executer.hpp
+  naive-src/regfile.hpp
 
   naive-main.cpp
 )

@@ -1,7 +1,7 @@
-#include "src/decoder.hpp"
-#include "src/executer.hpp"
-#include "src/memory.hpp"
-#include "src/regfile.hpp"
+#include "naive-src/decoder.hpp"
+#include "naive-src/executer.hpp"
+#include "naive-src/memory.hpp"
+#include "naive-src/regfile.hpp"
 
 #include <cstdio>
 
