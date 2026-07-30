@@ -15,3 +15,14 @@ add_executable(naive-code
 
   naive-main.cpp
 )
+
+add_executable(code 
+
+  src/alu.hpp
+  src/decoder.hpp
+  src/memory.hpp
+  src/executer.hpp
+  src/regfile.hpp
+
+  main.cpp
+)
