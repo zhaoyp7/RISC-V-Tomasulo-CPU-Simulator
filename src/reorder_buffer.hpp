@@ -5,9 +5,9 @@
 
 const int ROB_SIZE = 8;
 
-enum class ROBState {ISSUE, EXECUTE, WRITE, COMMIT};
+enum class ROBState { ISSUE, EXECUTE, WRITE, COMMIT };
 
-struct ROBData{
+struct ROBData {
   bool busy;
   ROBState state;
   DecodedIns inst;
@@ -17,7 +17,7 @@ struct ROBData{
   bool go_branch;
   uint32_t pc;
   uint32_t pred_pc;
-  uint32_t actural_pc;
+  uint32_t actual_pc;
   int lsb_idx;
 };
 
@@ -29,19 +29,67 @@ private:
   int new_head, new_tail;
 
 public:
-  ReorderBuffer();
-  int insert(const DecodedIns &inst, uint32_t pc, uint32_t  pred_pc);
-  bool check_full();
-  void set_execute(int idx);
-  void set_write(int idx);
-  void set_lsb_idx(int idx, int lsb_idx);
-  bool check_commit();
-  ROBData& commit();
-  void pop();
-  void flush(int idx);
-  bool is_branch(int idx);
-  bool is_store(int idx);
-  uint32_t get_actual_pc(int idx);
-  int get_lsb_idx(int idx) const;
-  void tick();
+  ReorderBuffer() {
+    for (int i = 0; i < ROB_SIZE; i++) {
+      old_data[i].busy = new_data[i].busy = false;
+    }
+    old_head = old_tail = 0;
+    new_head = new_tail = 0;
+  }
+  int insert(const DecodedIns &inst, uint32_t pc, uint32_t pred_pc) {
+    int idx = new_tail;
+    if (new_data[idx].busy) {
+      return -1;
+    }
+    new_tail = (new_tail + 1) % ROB_SIZE;
+    bool tmp =
+        (inst.opcode == 0x63 || inst.opcode == 0x67 || inst.opcode == 0x6F);
+    new_data[idx] =
+        (ROBData){true, ROBState::ISSUE, inst,   0, inst.rd, tmp, false,
+                  pc,   pred_pc,         pc + 4, -1};
+    return idx;
+  }
+  void set_write(int idx, uint32_t value) {
+    new_data[idx].state = ROBState::WRITE;
+    new_data[idx].value = value;
+  }
+  void set_branch(int idx, bool go_branch, uint32_t actual_pc) {
+    new_data[idx].go_branch = go_branch;
+    new_data[idx].actual_pc = actual_pc;
+  }
+  void set_execute(int idx) { new_data[idx].state = ROBState::EXECUTE; }
+  void set_lsb_idx(int idx, int lsb_idx) { new_data[idx].lsb_idx = lsb_idx; }
+  bool check_full() { return (old_data[old_tail].busy); }
+  bool is_branch(int idx) { return old_data[idx].is_branch; }
+  bool is_store(int idx) { return (old_data[idx].inst.opcode == 0x23); }
+  uint32_t get_actual_pc(int idx) { return old_data[idx].actual_pc; }
+  int get_lsb_idx(int idx) { return old_data[idx].lsb_idx; }
+  bool check_commit() {
+    int idx = old_head;
+    if (old_data[idx].busy == false) {
+      return false;
+    }
+    return (old_data[idx].state == ROBState::WRITE);
+  }
+  ROBData &commit() {
+    int idx = new_head;
+    new_data[idx].state = ROBState::COMMIT;
+    new_data[idx].busy = false;
+    new_head = (new_head + 1) % ROB_SIZE;
+    return old_data[idx];
+  }
+  void flush(int idx) {
+    while (new_tail != idx) {
+      new_tail = (new_tail - 1 + ROB_SIZE) % ROB_SIZE;
+      new_data[new_tail].busy = false;
+    }
+    new_head = idx;
+  }
+  void tick() {
+    for (int i = 0; i < ROB_SIZE; i++) {
+      old_data[i] = new_data[i];
+    }
+    old_head = new_head;
+    old_tail = new_tail;
+  }
 };
