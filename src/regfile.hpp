@@ -28,7 +28,6 @@ public:
       return ;
     }
     new_reg[addr] = val;
-    // new_status[addr] = (RegStatus) {1, val, 0};
   }
   RegStatus get_status(uint8_t addr) const {
     return old_status[addr];
@@ -45,6 +44,11 @@ public:
         new_reg[i] = value;
         new_status[i] = (RegStatus){1, value, 0};
       }
+    }
+  }
+  void flush() {
+    for (int i = 0; i < 32; i++) {
+      new_status[i] = (RegStatus) {true, new_reg[i], 0};
     }
   }
   void tick() {

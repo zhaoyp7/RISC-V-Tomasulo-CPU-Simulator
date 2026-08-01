@@ -47,24 +47,45 @@ public:
     new_data[idx] =
         (ROBData){true, ROBState::ISSUE, inst,   0, inst.rd, tmp, false,
                   pc,   pred_pc,         pc + 4, -1};
-    return idx;
+    return idx + 1;
   }
-  void set_write(int idx, uint32_t value) {
+  void set_write(int tag, uint32_t value) {
+    int idx = tag - 1;
     new_data[idx].state = ROBState::WRITE;
     new_data[idx].value = value;
   }
-  void set_branch(int idx, bool go_branch, uint32_t actual_pc) {
+  void set_branch(int tag, bool go_branch, uint32_t actual_pc) {
+    int idx = tag - 1;
     new_data[idx].go_branch = go_branch;
     new_data[idx].actual_pc = actual_pc;
   }
-  void set_execute(int idx) { new_data[idx].state = ROBState::EXECUTE; }
-  void set_lsq_idx(int idx, int lsq_idx) { new_data[idx].lsq_idx = lsq_idx; }
+  void set_execute(int tag) {
+    int idx = tag - 1;
+    new_data[idx].state = ROBState::EXECUTE;
+  }
+  void set_lsq_idx(int tag, int lsq_idx) {
+    int idx = tag - 1;
+
+    new_data[idx].lsq_idx = lsq_idx;
+  }
   bool check_full() { return (old_data[old_tail].busy); }
   bool check_empty() { return (old_data[old_head].busy == false); }
-  bool is_branch(int idx) { return old_data[idx].is_branch; }
-  bool is_store(int idx) { return (old_data[idx].inst.opcode == 0x23); }
-  uint32_t get_actual_pc(int idx) { return old_data[idx].actual_pc; }
-  int get_lsq_idx(int idx) { return old_data[idx].lsq_idx; }
+  bool is_branch(int tag) {
+    int idx = tag - 1;
+    return old_data[idx].is_branch;
+  }
+  bool is_store(int tag) {
+    int idx = tag - 1;
+    return (old_data[idx].inst.opcode == 0x23);
+  }
+  uint32_t get_actual_pc(int tag) {
+    int idx = tag - 1;
+    return old_data[idx].actual_pc;
+  }
+  int get_lsq_idx(int tag) {
+    int idx = tag - 1;
+    return old_data[idx].lsq_idx;
+  }
   bool check_commit() {
     int idx = new_head;
     if (new_data[idx].busy == false) {

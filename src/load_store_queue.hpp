@@ -109,6 +109,13 @@ public:
     }
     return (new_data[idx].addr_ready && new_data[idx].wait_cycles == 0);
   }
+  bool check_store_done(int idx) {
+    if (!new_data[idx].busy || new_data[idx].type != LSQType::STORE) {
+      return false;
+    }
+    return (new_data[idx].addr_ready && new_data[idx].data_ready &&
+            new_data[idx].wait_cycles == 0);
+}
   void flush() {
     for (int i = 0; i < LSQ_SIZE; i++) {
       new_data[i].busy = false;

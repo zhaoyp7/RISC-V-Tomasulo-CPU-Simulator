@@ -31,6 +31,7 @@ private:
       ROBData data = rob.commit();
       if (data.inst.opcode == 0x23) {
         lsq.commit_write(data.lsq_idx, mem);
+        lsq.remove(data.lsq_idx);
       } else if (data.inst.opcode != 0x63) {
         reg.write(data.dest, data.value);
       }
@@ -43,6 +44,7 @@ private:
           rob.flush_all();
           rs.flush();
           lsq.flush();
+          reg.flush();
           fetch.recover_pc(data.actual_pc);
         }
       }
@@ -86,6 +88,11 @@ private:
   void execute_stage() {
     rs.execute();
     lsq.execute(mem);
+    for (int i = 0; i < LSQ_SIZE; i++) {
+      if (lsq.check_store_done(i)) {
+        rob.set_write(lsq.get_tag(i), 0);
+      }
+    }
   }
   void issue_stage() {
     if (halt || rs.check_full() || lsq.check_full() || rob.check_full()) {
