@@ -18,7 +18,7 @@ struct ROBData {
   uint32_t pc;
   uint32_t pred_pc;
   uint32_t actual_pc;
-  int lsb_idx;
+  int lsq_idx;
 };
 
 class ReorderBuffer {
@@ -58,12 +58,13 @@ public:
     new_data[idx].actual_pc = actual_pc;
   }
   void set_execute(int idx) { new_data[idx].state = ROBState::EXECUTE; }
-  void set_lsb_idx(int idx, int lsb_idx) { new_data[idx].lsb_idx = lsb_idx; }
+  void set_lsq_idx(int idx, int lsq_idx) { new_data[idx].lsq_idx = lsq_idx; }
   bool check_full() { return (old_data[old_tail].busy); }
+  bool check_empty() { return (old_data[old_head].busy == false); }
   bool is_branch(int idx) { return old_data[idx].is_branch; }
   bool is_store(int idx) { return (old_data[idx].inst.opcode == 0x23); }
   uint32_t get_actual_pc(int idx) { return old_data[idx].actual_pc; }
-  int get_lsb_idx(int idx) { return old_data[idx].lsb_idx; }
+  int get_lsq_idx(int idx) { return old_data[idx].lsq_idx; }
   bool check_commit() {
     int idx = old_head;
     if (old_data[idx].busy == false) {
@@ -71,7 +72,7 @@ public:
     }
     return (old_data[idx].state == ROBState::WRITE);
   }
-  ROBData &commit() {
+  ROBData commit() {
     int idx = new_head;
     new_data[idx].state = ROBState::COMMIT;
     new_data[idx].busy = false;
@@ -84,6 +85,12 @@ public:
       new_data[new_tail].busy = false;
     }
     new_head = idx;
+  }
+  void flush_all() {
+    for (int i = 0; i < ROB_SIZE; i++) {
+      new_data[i].busy = false;
+    }
+    new_head = new_tail = 0;
   }
   void tick() {
     for (int i = 0; i < ROB_SIZE; i++) {

@@ -5,7 +5,7 @@
 struct RegStatus {
   bool ready;
   uint32_t value;
-  uint8_t waiting;
+  uint8_t tag;
 };
 
 class RegFile {
@@ -34,11 +34,14 @@ public:
     return old_status[addr];
   }
   void set_waiting(uint8_t addr, uint8_t waiting_tag) {
+    if (addr == 0) {
+      return ;
+    }
     new_status[addr] = (RegStatus){0, 0, waiting_tag};
   }
   void update_from_cdb(uint8_t waiting_tag, uint32_t value) {
     for (int i = 0; i < 32; i++) {
-      if (!new_status[i].ready && new_status[i].waiting == waiting_tag) {
+      if (!new_status[i].ready && new_status[i].tag == waiting_tag) {
         new_reg[i] = value;
         new_status[i] = (RegStatus){1, value, 0};
       }

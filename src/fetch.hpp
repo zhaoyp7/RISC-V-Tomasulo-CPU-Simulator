@@ -19,6 +19,6 @@ public:
     pred_pc = pc + 4;
     pc = pred_pc;
   }
-  void recover(uint32_t actual_pc) { pc = actual_pc; }
+  void recover_pc(uint32_t actual_pc) { pc = actual_pc; }
   uint32_t get_pc() { return last_pc; }
 };

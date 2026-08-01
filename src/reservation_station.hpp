@@ -57,7 +57,6 @@ public:
   }
   void execute() {
     for (int i = 0; i < RS_SIZE; i++) {
-      new_data[i] = old_data[i];
       if (new_data[i].busy && new_data[i].Qj == 0 && new_data[i].Qk == 0 &&
           new_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
@@ -70,7 +69,14 @@ public:
     return alu;
   }
   uint8_t get_tag(int idx) { return old_data[idx].tag; }
+  uint32_t get_pc(int idx) { return old_data[idx].pc; }
   void remove(int idx) { new_data[idx].busy = false; }
+  bool check_ready(int idx) {
+    return (old_data[idx].busy && !old_data[idx].Qj && !old_data[idx].Qk);
+  }
+  bool check_done(int idx) {
+    return (check_ready(idx) && !old_data[idx].wait_cycles);
+  }
   void flush() {
     for (int i = 0; i < RS_SIZE; i++) {
       new_data[i].busy = false;

@@ -3,13 +3,13 @@
 #include "memory.hpp"
 #include <cstdint>
 
-const int LSB_SIZE = 8;
+const int LSQ_SIZE = 8;
 
-enum class LSBType { LOAD, STORE };
+enum class LSQType { LOAD, STORE };
 
-struct LSBData {
+struct LSQData {
   bool busy;
-  LSBType type;
+  LSQType type;
   uint8_t funct3;
   bool addr_ready, data_ready;
   uint32_t addr, data;
@@ -19,23 +19,23 @@ struct LSBData {
 
 class LoadStoreQueue {
 private:
-  LSBData old_data[LSB_SIZE];
-  LSBData new_data[LSB_SIZE];
+  LSQData old_data[LSQ_SIZE];
+  LSQData new_data[LSQ_SIZE];
 
 public:
   LoadStoreQueue() {
-    for (int i = 0; i < LSB_SIZE; i++) {
+    for (int i = 0; i < LSQ_SIZE; i++) {
       old_data[i].busy = new_data[i].busy = false;
     }
   }
   int insert(uint8_t opcode, uint8_t tag, uint8_t funct3, uint32_t addr,
              bool addr_ready, uint32_t data, uint8_t store_data_tag,
              bool data_ready, uint8_t addr_tag) {
-    for (int i = 0; i < LSB_SIZE; i++) {
+    for (int i = 0; i < LSQ_SIZE; i++) {
       if (new_data[i].busy == false) {
-        LSBType type = (opcode == 0x03) ? LSBType::LOAD : LSBType::STORE;
+        LSQType type = (opcode == 0x03) ? LSQType::LOAD : LSQType::STORE;
         new_data[i] =
-            (LSBData){true, type, funct3,         addr_ready, data_ready, addr,
+            (LSQData){true, type, funct3,         addr_ready, data_ready, addr,
                       data, tag,  store_data_tag, addr_tag,   3};
         return i;
       }
@@ -43,7 +43,7 @@ public:
     return -1;
   }
   bool check_full() {
-    for (int i = 0; i < LSB_SIZE; i++) {
+    for (int i = 0; i < LSQ_SIZE; i++) {
       if (old_data[i].busy == false) {
         return false;
       }
@@ -51,18 +51,17 @@ public:
     return true;
   }
   void execute(Memory &mem) {
-    for (int i = 0; i < LSB_SIZE; i++) {
-      new_data[i] = old_data[i];
+    for (int i = 0; i < LSQ_SIZE; i++) {
       if (!new_data[i].busy || !new_data[i].addr_ready) {
         continue;
       }
-      if (new_data[i].type == LSBType::STORE && !new_data[i].data_ready) {
+      if (new_data[i].type == LSQType::STORE && !new_data[i].data_ready) {
         continue;
       }
       if (new_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
         if (new_data[i].wait_cycles == 0) {
-          if (new_data[i].type == LSBType::LOAD) {
+          if (new_data[i].type == LSQType::LOAD) {
             commit_load(i, mem);
           }
         }
@@ -70,9 +69,9 @@ public:
     }
   }
   void commit_load(int idx, Memory &mem) {
-    uint32_t addr = old_data[idx].addr;
+    uint32_t addr = new_data[idx].addr;
     uint32_t ans = 0;
-    uint8_t funct3 = old_data[idx].funct3;
+    uint8_t funct3 = new_data[idx].funct3;
     if (funct3 == 0x0) {
       ans = mem.load_byte(addr);
     } else if (funct3 == 0x4) {
@@ -100,28 +99,28 @@ public:
   }
   uint32_t get_load_result(int idx) { return new_data[idx].data; }
   uint8_t get_tag(int idx) { return old_data[idx].tag; }
-  bool is_load(int idx) { return (old_data[idx].type == LSBType::LOAD); }
-  bool is_store(int idx) { return (old_data[idx].type == LSBType::STORE); }
+  bool is_load(int idx) { return (old_data[idx].type == LSQType::LOAD); }
+  bool is_store(int idx) { return (old_data[idx].type == LSQType::STORE); }
   void remove(int idx) { new_data[idx].busy = false; }
   bool check_load_done(int idx) {
-    if (!new_data[idx].busy || new_data[idx].type != LSBType::LOAD) {
+    if (!new_data[idx].busy || new_data[idx].type != LSQType::LOAD) {
       return false;
     }
     return (new_data[idx].addr_ready && new_data[idx].wait_cycles == 0);
   }
   void flush() {
-    for (int i = 0; i < LSB_SIZE; i++) {
+    for (int i = 0; i < LSQ_SIZE; i++) {
       new_data[i].busy = false;
     }
   }
   void listen_cdb(uint8_t tag, uint32_t value) {
-    for (int i = 0; i < LSB_SIZE; i++) {
+    for (int i = 0; i < LSQ_SIZE; i++) {
       if (new_data[i].busy) {
         if (!new_data[i].addr_ready && new_data[i].addr_tag == tag) {
           new_data[i].addr_ready = true;
           new_data[i].addr = value;
         }
-        if (new_data[i].type == LSBType::STORE && !new_data[i].data_ready &&
+        if (new_data[i].type == LSQType::STORE && !new_data[i].data_ready &&
             new_data[i].store_data_tag == tag) {
           new_data[i].data_ready = true;
           new_data[i].data = value;
@@ -130,7 +129,7 @@ public:
     }
   }
   void tick() {
-    for (int i = 0; i < LSB_SIZE; i++) {
+    for (int i = 0; i < LSQ_SIZE; i++) {
       old_data[i] = new_data[i];
     }
   }
