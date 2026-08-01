@@ -17,12 +17,17 @@ add_executable(naive-code
 )
 
 add_executable(code 
-
   src/alu.hpp
+  src/branch_predictor.hpp
+  src/cdb.hpp
   src/decoder.hpp
+  src/fetch.hpp
+  src/load_store_queue.hpp
   src/memory.hpp
-  src/executer.hpp
   src/regfile.hpp
+  src/reorder_buffer.hpp
+  src/reservation_station.hpp
+  src/tomasulo.hpp
 
   main.cpp
 )

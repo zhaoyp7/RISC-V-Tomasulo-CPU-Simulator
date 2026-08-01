@@ -85,11 +85,11 @@ public:
   void listen_cdb(uint8_t tag, uint32_t value) {
     for (int i = 0; i < RS_SIZE; i++) {
       if (new_data[i].busy) {
-        if (new_data[i].Qj == tag) {
+        if (new_data[i].Qj != 0 && new_data[i].Qj == tag) {
           new_data[i].Vj = value;
           new_data[i].Qj = 0;
         }
-        if (new_data[i].Qk == tag) {
+        if (new_data[i].Qk != 0 && new_data[i].Qk == tag) {
           new_data[i].Vk = value;
           new_data[i].Qk = 0;
         }

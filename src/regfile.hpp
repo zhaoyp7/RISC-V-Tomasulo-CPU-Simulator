@@ -28,7 +28,7 @@ public:
       return ;
     }
     new_reg[addr] = val;
-    new_status[addr] = (RegStatus) {1, val, 0};
+    // new_status[addr] = (RegStatus) {1, val, 0};
   }
   RegStatus get_status(uint8_t addr) const {
     return old_status[addr];
@@ -41,7 +41,7 @@ public:
   }
   void update_from_cdb(uint8_t waiting_tag, uint32_t value) {
     for (int i = 0; i < 32; i++) {
-      if (!new_status[i].ready && new_status[i].tag == waiting_tag) {
+      if (!new_status[i].ready && new_status[i].tag != 0 && new_status[i].tag == waiting_tag) {
         new_reg[i] = value;
         new_status[i] = (RegStatus){1, value, 0};
       }

@@ -15,6 +15,7 @@ struct LSQData {
   uint32_t addr, data;
   uint8_t tag, store_data_tag, addr_tag;
   int wait_cycles;
+  uint32_t imm;
 };
 
 class LoadStoreQueue {
@@ -30,13 +31,13 @@ public:
   }
   int insert(uint8_t opcode, uint8_t tag, uint8_t funct3, uint32_t addr,
              bool addr_ready, uint32_t data, uint8_t store_data_tag,
-             bool data_ready, uint8_t addr_tag) {
+             bool data_ready, uint8_t addr_tag, uint32_t imm) {
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (new_data[i].busy == false) {
         LSQType type = (opcode == 0x03) ? LSQType::LOAD : LSQType::STORE;
         new_data[i] =
             (LSQData){true, type, funct3,         addr_ready, data_ready, addr,
-                      data, tag,  store_data_tag, addr_tag,   3};
+                      data, tag,  store_data_tag, addr_tag,   3, imm};
         return i;
       }
     }
@@ -97,7 +98,7 @@ public:
       mem.store_word(addr, val);
     }
   }
-  uint32_t get_load_result(int idx) { return new_data[idx].data; }
+  uint32_t get_load_result(int idx) { return old_data[idx].data; }
   uint8_t get_tag(int idx) { return old_data[idx].tag; }
   bool is_load(int idx) { return (old_data[idx].type == LSQType::LOAD); }
   bool is_store(int idx) { return (old_data[idx].type == LSQType::STORE); }
@@ -116,9 +117,9 @@ public:
   void listen_cdb(uint8_t tag, uint32_t value) {
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (new_data[i].busy) {
-        if (!new_data[i].addr_ready && new_data[i].addr_tag == tag) {
+        if (!new_data[i].addr_ready && new_data[i].addr_tag != 0 && new_data[i].addr_tag == tag) {
           new_data[i].addr_ready = true;
-          new_data[i].addr = value;
+          new_data[i].addr = value + new_data[i].imm;
         }
         if (new_data[i].type == LSQType::STORE && !new_data[i].data_ready &&
             new_data[i].store_data_tag == tag) {

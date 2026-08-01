@@ -6,8 +6,8 @@
 struct ALUResult {
   uint32_t value;
   uint32_t next_pc;
-  uint32_t go_branch;
-  uint32_t is_branch;
+  bool go_branch;
+  bool is_branch;
 };
 
 class ALU {

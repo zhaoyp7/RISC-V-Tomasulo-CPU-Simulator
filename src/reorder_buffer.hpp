@@ -66,11 +66,11 @@ public:
   uint32_t get_actual_pc(int idx) { return old_data[idx].actual_pc; }
   int get_lsq_idx(int idx) { return old_data[idx].lsq_idx; }
   bool check_commit() {
-    int idx = old_head;
-    if (old_data[idx].busy == false) {
+    int idx = new_head;
+    if (new_data[idx].busy == false) {
       return false;
     }
-    return (old_data[idx].state == ROBState::WRITE);
+    return (new_data[idx].state == ROBState::WRITE);
   }
   ROBData commit() {
     int idx = new_head;
@@ -87,10 +87,10 @@ public:
     new_head = idx;
   }
   void flush_all() {
-    for (int i = 0; i < ROB_SIZE; i++) {
-      new_data[i].busy = false;
+    while (new_tail != new_head) {
+      new_tail = (new_tail - 1 + ROB_SIZE) % ROB_SIZE;
+      new_data[new_tail].busy = false;
     }
-    new_head = new_tail = 0;
   }
   void tick() {
     for (int i = 0; i < ROB_SIZE; i++) {
