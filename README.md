@@ -18,17 +18,28 @@
 ## 2. 目录结构
 
 ```
-├── main.cpp                 # 主入口
-├── naive-main.cpp           # 单周期参考实现入口
-├── test.sh                  # 批量测试脚本
+├── main.cpp                    # 主入口
+├── naive-main.cpp              # 单周期参考实现入口
+├── test.sh                     # 批量测试脚本
 ├── CMakeLists.txt
-├── src/                     # Tomasulo 核心源码
-├── naive-src/               # 单周期参考源码
-├── data/testcases/          # 19 个测试用例 (.c / .data / .dump)
-├── data/sample/             # 示例用例
-├── doc/                     # 设计文档
-├── reference/               # RISC-V 参考资料
-└── ppt/                     # 课程讲义
+├── src/                        # Tomasulo 核心源码
+│   ├── tomasulo.hpp            # 顶层控制器，整合流水线阶段
+│   ├── alu.hpp                 # ALU 计算单元
+│   ├── branch_predictor.hpp    # 1-bit 分支预测器
+│   ├── cdb.hpp                 # 公共数据总线 (CDB)
+│   ├── decoder.hpp             # RV32I 指令译码器
+│   ├── fetch.hpp               # 取指单元
+│   ├── load_store_queue.hpp    # Load/Store 队列 (含 store-to-load forwarding)
+│   ├── memory.hpp              # 内存 (std::map 模拟)
+│   ├── regfile.hpp             # 寄存器文件 + 重命名状态表
+│   ├── reorder_buffer.hpp      # 重排序缓冲区 (ROB)
+│   └── reservation_station.hpp # 保留站 (RS)
+├── naive-src/                  # 单周期参考源码
+├── data/testcases/             # 18 个测试用例 (.c / .data / .dump)
+├── data/sample/                # 示例用例
+├── doc/                        # 设计文档
+├── reference/                  # RISC-V 参考资料
+└── ppt/                        # 课程讲义
 ```
 
 ---
