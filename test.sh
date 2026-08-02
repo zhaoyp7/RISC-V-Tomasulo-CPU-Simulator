@@ -3,7 +3,7 @@ set -e
 
 # === 配置 ===
 CXX="${CXX:-g++}"
-CXXFLAGS="-std=c++17 -O2"
+CXXFLAGS="-std=c++17 -O2 -DLOCAL"
 SRC="main.cpp"
 BIN="./main_tmp"
 DATA_DIRS=("data/testcases" "data/sample")
@@ -81,10 +81,15 @@ echo -e "${YELLOW}[2/3] 运行测试用例 (timeout=${TIMEOUT_SEC}s)${NC}"
 log "Test Results:"
 log ""
 
-# 表头
-HEADER_FMT="%-20s %-8s %-8s %-10s %s\n"
-printf "$HEADER_FMT" "Testcase" "Expect" "Actual" "Time" "Status" >> "$LOG_FILE"
-printf "$HEADER_FMT" "--------" "------" "------" "----------" "------" >> "$LOG_FILE"
+HEADER_STDOUT="%-20s %-12s %-12s %-12s %-8s\n"
+HEADER_LOG="%-20s %-8s %-8s %-10s %-12s %-12s %-12s %s\n"
+printf "$HEADER_STDOUT" "Testcase" "Cycles" "Predictions" "Accuracy" "Status"
+printf "$HEADER_STDOUT" "--------" "------" "-----------" "--------" "------"
+printf "$HEADER_LOG" "Testcase" "Expect" "Actual" "Time" "Cycles" "Predictions" "Accuracy" "Status" >> "$LOG_FILE"
+printf "$HEADER_LOG" "--------" "------" "------" "----------" "------" "-----------" "--------" "------" >> "$LOG_FILE"
+
+TMP_STDOUT=$(mktemp)
+TMP_STDERR=$(mktemp)
 
 for dir in "${DATA_DIRS[@]}"; do
     for data_file in "$dir"/*.data; do
@@ -95,31 +100,41 @@ for dir in "${DATA_DIRS[@]}"; do
 
         if [ -z "$expected" ]; then
             echo -e "  ${YELLOW}SKIP${NC} $name (无预期值)"
-            printf "$HEADER_FMT" "$name" "-" "-" "-" "SKIP" >> "$LOG_FILE"
+            printf "$HEADER_LOG" "$name" "-" "-" "-" "-" "-" "-" "SKIP" >> "$LOG_FILE"
             continue
         fi
 
         TEST_START=$(date +%s%N)
-        result=$(timeout $TIMEOUT_SEC "$BIN" < "$data_file" 2>&1) || true
+        timeout $TIMEOUT_SEC "$BIN" < "$data_file" > "$TMP_STDOUT" 2> "$TMP_STDERR"
         exit_code=$?
         TEST_END=$(date +%s%N)
         TEST_MS=$(( (TEST_END - TEST_START) / 1000000 ))
 
+        result=$(cat "$TMP_STDOUT")
+        cycles=$(grep -oP 'total cycles = \K\d+' "$TMP_STDERR" 2>/dev/null || echo "-")
+        predicts=$(grep -oP 'total predict: \K\d+' "$TMP_STDERR" 2>/dev/null || echo "-")
+        accuracy=$(grep -oP 'prediction accuracy: \K[\d.]+' "$TMP_STDERR" 2>/dev/null || echo "-")
+        if [ "$accuracy" != "-" ]; then
+            accuracy=$(awk "BEGIN {printf \"%.2f%%\", $accuracy * 100}")
+        fi
+
         if [ $exit_code -eq 124 ]; then
-            echo -e "  ${RED}FAIL${NC} $name — 超时 (>${TIMEOUT_SEC}s)"
-            printf "$HEADER_FMT" "$name" "$expected" "TIMEOUT" "${TEST_MS}ms" "FAIL" >> "$LOG_FILE"
+            printf "%-20s %-12s %-12s %-12s %b\n" "$name" "-" "-" "-" "${RED}FAIL${NC}"
+            printf "$HEADER_LOG" "$name" "$expected" "TIMEOUT" "${TEST_MS}ms" "-" "-" "-" "FAIL" >> "$LOG_FILE"
             FAIL=$((FAIL + 1))
         elif [ "$result" = "$expected" ]; then
-            echo -e "  ${GREEN}PASS${NC} $name — $result (${TEST_MS}ms)"
-            printf "$HEADER_FMT" "$name" "$expected" "$result" "${TEST_MS}ms" "PASS" >> "$LOG_FILE"
+            printf "%-20s %-12s %-12s %-12s %b\n" "$name" "$cycles" "$predicts" "$accuracy" "${GREEN}PASS${NC}"
+            printf "$HEADER_LOG" "$name" "$expected" "$result" "${TEST_MS}ms" "$cycles" "$predicts" "$accuracy" "PASS" >> "$LOG_FILE"
             PASS=$((PASS + 1))
         else
-            echo -e "  ${RED}FAIL${NC} $name — 期望 $expected，实际 $result (${TEST_MS}ms)"
-            printf "$HEADER_FMT" "$name" "$expected" "$result" "${TEST_MS}ms" "FAIL" >> "$LOG_FILE"
+            printf "%-20s %-12s %-12s %-12s %b\n" "$name" "$cycles" "$predicts" "$accuracy" "${RED}FAIL${NC}"
+            printf "$HEADER_LOG" "$name" "$expected" "$result" "${TEST_MS}ms" "$cycles" "$predicts" "$accuracy" "FAIL" >> "$LOG_FILE"
             FAIL=$((FAIL + 1))
         fi
     done
 done
+
+rm -f "$TMP_STDOUT" "$TMP_STDERR"
 
 log ""
 

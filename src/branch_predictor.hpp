@@ -21,24 +21,24 @@ public:
     int idx = (pc >> 2) & SIZE_MASK;
     total++;
     if (visited[idx] == false) {
-      return false;
+      return true;
     }
     return result[idx];
   }
   void update(uint32_t pc, bool feedback) {
     int idx = (pc >> 2) & SIZE_MASK;
-    bool predict = visited[idx] ? result[idx] : false;
+    bool predict = visited[idx] ? result[idx] : true;
     correct += (predict == feedback);
     visited[idx] = true;
     result[idx] = feedback;
   }
   void debug() {
     if (total == 0) {
-      puts("Effective prediction has not been made yet");
+      fputs("Effective prediction has not been made yet\n", stderr);
       return ;
     }
-    printf("total predict: %d\n", total);
-    printf("correct predict: %d\n", correct);
-    printf("prediction accuracy: %.4lf\n",1.0 * correct / total);
+    fprintf(stderr, "total predict: %d\n", total);
+    fprintf(stderr, "correct predict: %d\n", correct);
+    fprintf(stderr, "prediction accuracy: %.4lf\n",1.0 * correct / total);
   }
 };

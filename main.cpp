@@ -6,8 +6,10 @@ int main() {
   while (!cpu.check_done()) {
     cpu.step();
   }
-  // printf("total cycles = %d\n",cpu.get_cycles());
-  // cpu.bp_result();
+#ifdef LOCAL
+  fprintf(stderr, "total cycles = %d\n", cpu.get_cycles());
+  cpu.bp_result();
+#endif
   printf("%u", cpu.get_result());
   return 0;
 }
