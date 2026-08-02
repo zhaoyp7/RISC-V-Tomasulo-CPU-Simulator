@@ -27,26 +27,27 @@ private:
   int cycles;
 
   void commit_stage() {
-    while (rob.check_commit()) {
-      ROBData data = rob.commit();
-      if (data.inst.opcode == 0x23) {
-        lsq.commit_write(data.lsq_idx, mem);
-        lsq.remove(data.lsq_idx);
-      } else if (data.inst.opcode != 0x63) {
-        reg.write(data.dest, data.value);
-      }
-      if (data.is_branch) {
-        bp.predict(data.pc);
-        bp.update(data.pc, data.go_branch);
-        bool flag = (data.pred_pc != data.pc + 4);
-        if (flag != data.go_branch) {
-          halt = false;
-          rob.flush_all();
-          rs.flush();
-          lsq.flush();
-          reg.flush();
-          fetch.recover_pc(data.actual_pc);
-        }
+    if (!rob.check_commit()) {
+      return;
+    }
+    ROBData data = rob.commit();
+    if (data.inst.opcode == 0x23) {
+      lsq.commit_write(data.lsq_idx, mem);
+      lsq.remove(data.lsq_idx);
+    } else if (data.inst.opcode != 0x63) {
+      reg.write(data.dest, data.value);
+    }
+    if (data.is_branch) {
+      bp.predict(data.pc);
+      bp.update(data.pc, data.go_branch);
+      bool flag = (data.pred_pc != data.pc + 4);
+      if (flag != data.go_branch) {
+        halt = false;
+        rob.flush_all();
+        rs.flush();
+        lsq.flush();
+        reg.flush();
+        fetch.recover_pc(data.actual_pc);
       }
     }
   }
@@ -96,14 +97,14 @@ private:
   }
   void issue_stage() {
     if (halt || rs.check_full() || lsq.check_full() || rob.check_full()) {
-      return ;
+      return;
     }
     uint32_t ins, pred_pc;
     fetch.fetch(ins, pred_pc);
     uint32_t pc = fetch.get_pc();
     if (ins == 0x0ff00513) {
       halt = true;
-      return ;
+      return;
     }
     DecodedIns inst = decoder.decode(ins);
     uint32_t Vj = 0, Vk = 0;
@@ -134,11 +135,13 @@ private:
     }
     if (inst.opcode == 0x03) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
-      int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0), 0, 0, true, Qj, inst.imm);
+      int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0),
+                               0, 0, true, Qj, inst.imm);
       rob.set_lsq_idx(tag, lsq_idx);
     } else if (inst.opcode == 0x23) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
-      int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0), Vk , Qk, (Qk == 0), Qj, inst.imm);
+      int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0),
+                               Vk, Qk, (Qk == 0), Qj, inst.imm);
       rob.set_lsq_idx(tag, lsq_idx);
     } else {
       int rs_idx = rs.insert(inst, tag, Vj, Vk, Qj, Qk, pc);
@@ -159,11 +162,10 @@ private:
     return inst.opcode == 0x33 || inst.opcode == 0x23 || inst.opcode == 0x63;
   }
   bool need_rd(const DecodedIns &inst) {
-    return inst.opcode == 0x33 || inst.opcode == 0x13 ||
-               inst.opcode == 0x03 || inst.opcode == 0x6F ||
-               inst.opcode == 0x67 || inst.opcode == 0x17 ||
-               inst.opcode == 0x37;
-      }
+    return inst.opcode == 0x33 || inst.opcode == 0x13 || inst.opcode == 0x03 ||
+           inst.opcode == 0x6F || inst.opcode == 0x67 || inst.opcode == 0x17 ||
+           inst.opcode == 0x37;
+  }
 
 public:
   Tomasulo() : fetch(mem, bp) {
