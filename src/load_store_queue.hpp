@@ -16,6 +16,8 @@ struct LSQData {
   uint8_t tag, store_data_tag, addr_tag;
   int wait_cycles;
   uint32_t imm;
+  bool loaded;
+  uint32_t count_num;
 };
 
 class LoadStoreQueue {
@@ -31,13 +33,13 @@ public:
   }
   int insert(uint8_t opcode, uint8_t tag, uint8_t funct3, uint32_t addr,
              bool addr_ready, uint32_t data, uint8_t store_data_tag,
-             bool data_ready, uint8_t addr_tag, uint32_t imm) {
+             bool data_ready, uint8_t addr_tag, uint32_t imm, uint32_t count) {
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (new_data[i].busy == false) {
         LSQType type = (opcode == 0x03) ? LSQType::LOAD : LSQType::STORE;
         new_data[i] =
             (LSQData){true, type, funct3,         addr_ready, data_ready, addr,
-                      data, tag,  store_data_tag, addr_tag,   3, imm};
+                      data, tag,  store_data_tag, addr_tag,   3, imm, false, count};
         return i;
       }
     }
@@ -61,19 +63,36 @@ public:
       }
       if (new_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
-        if (new_data[i].wait_cycles == 0) {
-          if (new_data[i].type == LSQType::LOAD) {
-            commit_load(i, mem);
-          }
-        }
+      }
+      if (new_data[i].type == LSQType::LOAD && new_data[i].wait_cycles == 0) {
+        commit_load(i, mem);
       }
     }
   }
   void commit_load(int idx, Memory &mem) {
     uint32_t addr = new_data[idx].addr;
+    uint32_t load_num = new_data[idx].count_num;
     uint32_t ans = 0;
     uint8_t funct3 = new_data[idx].funct3;
-    if (funct3 == 0x0) {
+
+    int best_store = -1;
+    uint32_t best_num = 0;
+    for (int j = 0; j < LSQ_SIZE; j++) {
+      if (new_data[j].busy && new_data[j].type == LSQType::STORE &&
+          new_data[j].addr_ready && new_data[j].addr == addr &&
+          new_data[j].count_num < load_num &&
+          (best_store == -1 || new_data[j].count_num > best_num)) {
+        best_store = j;
+        best_num = new_data[j].count_num;
+      }
+    }
+    if (best_store != -1) {
+      if (new_data[best_store].data_ready) {
+        ans = new_data[best_store].data;
+      } else {
+        return;
+      }
+    } else if (funct3 == 0x0) {
       ans = mem.load_byte(addr);
     } else if (funct3 == 0x4) {
       ans = mem.load_byte_unsigned(addr);
@@ -85,6 +104,7 @@ public:
       ans = mem.load_word(addr);
     }
     new_data[idx].data = ans;
+    new_data[idx].loaded = true;
   }
   void commit_write(int idx, Memory &mem) {
     uint32_t addr = old_data[idx].addr;
@@ -107,7 +127,8 @@ public:
     if (!new_data[idx].busy || new_data[idx].type != LSQType::LOAD) {
       return false;
     }
-    return (new_data[idx].addr_ready && new_data[idx].wait_cycles == 0);
+    return (new_data[idx].addr_ready && new_data[idx].wait_cycles == 0 &&
+            new_data[idx].loaded);
   }
   bool check_store_done(int idx) {
     if (!new_data[idx].busy || new_data[idx].type != LSQType::STORE) {

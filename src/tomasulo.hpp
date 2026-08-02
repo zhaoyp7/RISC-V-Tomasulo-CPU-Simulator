@@ -25,6 +25,7 @@ private:
   BranchPredictor bp;
   bool halt;
   int cycles;
+  uint32_t count;
 
   void commit_stage() {
     if (!rob.check_commit()) {
@@ -136,12 +137,12 @@ private:
     if (inst.opcode == 0x03) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
       int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0),
-                               0, 0, true, Qj, inst.imm);
+                                0, 0, true, Qj, inst.imm, count++);
       rob.set_lsq_idx(tag, lsq_idx);
     } else if (inst.opcode == 0x23) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
       int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0),
-                               Vk, Qk, (Qk == 0), Qj, inst.imm);
+                               Vk, Qk, (Qk == 0), Qj, inst.imm, count++);
       rob.set_lsq_idx(tag, lsq_idx);
     } else {
       int rs_idx = rs.insert(inst, tag, Vj, Vk, Qj, Qk, pc);
@@ -171,6 +172,7 @@ public:
   Tomasulo() : fetch(mem, bp) {
     halt = false;
     cycles = 0;
+    count = 0;
   }
   void init() { mem.init(); }
   bool check_done() { return (halt && rob.check_empty()); }
