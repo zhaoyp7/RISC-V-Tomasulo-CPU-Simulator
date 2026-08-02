@@ -41,7 +41,7 @@ public:
   }
   bool check_full() {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (old_data[i].busy == false) {
+      if (new_data[i].busy == false) {
         return false;
       }
     }

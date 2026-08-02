@@ -41,7 +41,6 @@ public:
   void update_from_cdb(uint8_t waiting_tag, uint32_t value) {
     for (int i = 0; i < 32; i++) {
       if (!new_status[i].ready && new_status[i].tag != 0 && new_status[i].tag == waiting_tag) {
-        new_reg[i] = value;
         new_status[i] = (RegStatus){1, value, 0};
       }
     }
@@ -49,6 +48,7 @@ public:
   void flush() {
     for (int i = 0; i < 32; i++) {
       new_status[i] = (RegStatus) {true, new_reg[i], 0};
+      old_status[i] = new_status[i];
     }
   }
   void tick() {

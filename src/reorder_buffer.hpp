@@ -68,8 +68,10 @@ public:
 
     new_data[idx].lsq_idx = lsq_idx;
   }
-  bool check_full() { return (old_data[old_tail].busy); }
-  bool check_empty() { return (old_data[old_head].busy == false); }
+  int get_head() { return new_head; }
+  int get_tail() { return new_tail; }
+  bool check_full() { return (new_data[new_tail].busy); }
+  bool check_empty() { return (new_data[new_head].busy == false); }
   bool is_branch(int tag) {
     int idx = tag - 1;
     return old_data[idx].is_branch;

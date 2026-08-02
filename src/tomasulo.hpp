@@ -51,16 +51,6 @@ private:
     }
   }
   void writeback_stage() {
-    for (int i = 0; i < LSQ_SIZE; i++) {
-      if (lsq.check_load_done(i)) {
-        uint32_t value = lsq.get_load_result(i);
-        uint8_t tag = lsq.get_tag(i);
-        cdb.broadcast(tag, value);
-        rob.set_write(tag, value);
-        lsq.remove(i);
-        return;
-      }
-    }
     for (int i = 0; i < RS_SIZE; i++) {
       if (rs.check_done(i)) {
         ALUResult alu = rs.get_result(i);
@@ -72,6 +62,16 @@ private:
         }
         rob.set_write(tag, alu.value);
         rs.remove(i);
+        return;
+      }
+    }
+    for (int i = 0; i < LSQ_SIZE; i++) {
+      if (lsq.check_load_done(i)) {
+        uint32_t value = lsq.get_load_result(i);
+        uint8_t tag = lsq.get_tag(i);
+        cdb.broadcast(tag, value);
+        rob.set_write(tag, value);
+        lsq.remove(i);
         return;
       }
     }

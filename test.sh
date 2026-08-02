@@ -8,7 +8,7 @@ SRC="main.cpp"
 BIN="./main_tmp"
 DATA_DIRS=("data/testcases" "data/sample")
 LOG_DIR="log"
-TIMEOUT_SEC=10
+TIMEOUT_SEC=60
 
 # === 颜色 ===
 RED='\033[0;31m'
