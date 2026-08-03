@@ -15,7 +15,6 @@ private:
 public:
   CommonDataBus() {bc.flag = false;}
   void broadcast(uint8_t tag, uint32_t value) {
-    if (bc.flag) return;
     bc.flag = true; bc.tag = tag; bc.value = value;
   }
   bool has_broadcast() { return bc.flag; }
