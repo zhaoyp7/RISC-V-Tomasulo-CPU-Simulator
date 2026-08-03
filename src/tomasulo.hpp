@@ -183,8 +183,8 @@ public:
     commit_stage();
     writeback_stage();
     cdb_listen_stage();
-    execute_stage();
     issue_stage();
+    execute_stage();
     tick_stage();
   }
 };
