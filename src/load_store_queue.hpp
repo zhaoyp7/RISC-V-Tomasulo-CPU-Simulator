@@ -37,9 +37,9 @@ public:
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (old_data[i].busy == false) {
         LSQType type = (opcode == 0x03) ? LSQType::LOAD : LSQType::STORE;
-        new_data[i] =
-            (LSQData){true, type, funct3,         addr_ready, data_ready, addr,
-                      data, tag,  store_data_tag, addr_tag,   3, imm, false, count};
+        new_data[i] = (LSQData){true, type, funct3, addr_ready,     data_ready,
+                                addr, data, tag,    store_data_tag, addr_tag,
+                                3,    imm,  false,  count};
         return i;
       }
     }
@@ -61,11 +61,11 @@ public:
       if (old_data[i].type == LSQType::STORE && !old_data[i].data_ready) {
         continue;
       }
-      bool flag = (old_data[i].wait_cycles - 1 == 0);
+      bool flag = (old_data[i].wait_cycles <= 1);
       if (old_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
       }
-      if (old_data[i].type == LSQType::LOAD && flag) {
+      if (old_data[i].type == LSQType::LOAD && flag && !old_data[i].loaded) {
         commit_load(i, mem);
       }
     }
@@ -84,6 +84,13 @@ public:
           (best_store == -1 || old_data[j].count_num > best_num)) {
         best_store = j;
         best_num = old_data[j].count_num;
+      }
+    }
+    for (int j = 0; j < LSQ_SIZE; j++) {
+      if (old_data[j].busy && old_data[j].type == LSQType::STORE &&
+          old_data[j].count_num < load_num &&
+          old_data[j].count_num > best_num && !old_data[j].addr_ready) {
+        return;
       }
     }
     if (best_store != -1) {
@@ -145,7 +152,8 @@ public:
   void listen_cdb(uint8_t tag, uint32_t value) {
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (old_data[i].busy) {
-        if (!old_data[i].addr_ready && old_data[i].addr_tag != 0 && old_data[i].addr_tag == tag) {
+        if (!old_data[i].addr_ready && old_data[i].addr_tag != 0 &&
+            old_data[i].addr_tag == tag) {
           new_data[i].addr_ready = true;
           new_data[i].addr = value + new_data[i].imm;
         }
