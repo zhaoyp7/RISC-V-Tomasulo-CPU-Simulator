@@ -71,10 +71,10 @@ public:
     }
   }
   void commit_load(int idx, Memory &mem) {
-    uint32_t addr = new_data[idx].addr;
-    uint32_t load_num = new_data[idx].count_num;
+    uint32_t addr = old_data[idx].addr;
+    uint32_t load_num = old_data[idx].count_num;
     uint32_t ans = 0;
-    uint8_t funct3 = new_data[idx].funct3;
+    uint8_t funct3 = old_data[idx].funct3;
     int best_store = -1;
     uint32_t best_num = 0;
     for (int j = 0; j < LSQ_SIZE; j++) {
