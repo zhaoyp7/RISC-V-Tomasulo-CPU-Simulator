@@ -37,11 +37,11 @@ public:
     new_head = new_tail = 0;
   }
   int insert(const DecodedIns &inst, uint32_t pc, uint32_t pred_pc) {
-    int idx = new_tail;
-    if (new_data[idx].busy) {
+    int idx = old_tail;
+    if (old_data[idx].busy) {
       return -1;
     }
-    new_tail = (new_tail + 1) % ROB_SIZE;
+    new_tail = (old_tail + 1) % ROB_SIZE;
     bool tmp =
         (inst.opcode == 0x63 || inst.opcode == 0x67 || inst.opcode == 0x6F);
     new_data[idx] =
@@ -65,13 +65,10 @@ public:
   }
   void set_lsq_idx(int tag, int lsq_idx) {
     int idx = tag - 1;
-
     new_data[idx].lsq_idx = lsq_idx;
   }
-  int get_head() { return new_head; }
-  int get_tail() { return new_tail; }
-  bool check_full() { return (new_data[new_tail].busy); }
-  bool check_empty() { return (new_data[new_head].busy == false); }
+  bool check_full() { return (old_data[old_tail].busy); }
+  bool check_empty() { return (old_data[old_head].busy == false); }
   bool is_branch(int tag) {
     int idx = tag - 1;
     return old_data[idx].is_branch;
@@ -89,17 +86,17 @@ public:
     return old_data[idx].lsq_idx;
   }
   bool check_commit() {
-    int idx = new_head;
-    if (new_data[idx].busy == false) {
+    int idx = old_head;
+    if (old_data[idx].busy == false) {
       return false;
     }
-    return (new_data[idx].state == ROBState::WRITE);
+    return (old_data[idx].state == ROBState::WRITE);
   }
   ROBData commit() {
-    int idx = new_head;
+    int idx = old_head;
     new_data[idx].state = ROBState::COMMIT;
     new_data[idx].busy = false;
-    new_head = (new_head + 1) % ROB_SIZE;
+    new_head = (old_head + 1) % ROB_SIZE;
     return old_data[idx];
   }
   void flush() {
