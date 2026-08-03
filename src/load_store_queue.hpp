@@ -35,7 +35,7 @@ public:
              bool addr_ready, uint32_t data, uint8_t store_data_tag,
              bool data_ready, uint8_t addr_tag, uint32_t imm, uint32_t count) {
     for (int i = 0; i < LSQ_SIZE; i++) {
-      if (new_data[i].busy == false) {
+      if (old_data[i].busy == false) {
         LSQType type = (opcode == 0x03) ? LSQType::LOAD : LSQType::STORE;
         new_data[i] =
             (LSQData){true, type, funct3,         addr_ready, data_ready, addr,
@@ -47,7 +47,7 @@ public:
   }
   bool check_full() {
     for (int i = 0; i < LSQ_SIZE; i++) {
-      if (new_data[i].busy == false) {
+      if (old_data[i].busy == false) {
         return false;
       }
     }
@@ -55,16 +55,17 @@ public:
   }
   void execute(Memory &mem) {
     for (int i = 0; i < LSQ_SIZE; i++) {
-      if (!new_data[i].busy || !new_data[i].addr_ready) {
+      if (!old_data[i].busy || !old_data[i].addr_ready) {
         continue;
       }
-      if (new_data[i].type == LSQType::STORE && !new_data[i].data_ready) {
+      if (old_data[i].type == LSQType::STORE && !old_data[i].data_ready) {
         continue;
       }
-      if (new_data[i].wait_cycles) {
+      bool flag = (old_data[i].wait_cycles - 1 == 0);
+      if (old_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
       }
-      if (new_data[i].type == LSQType::LOAD && new_data[i].wait_cycles == 0) {
+      if (old_data[i].type == LSQType::LOAD && flag) {
         commit_load(i, mem);
       }
     }
@@ -74,21 +75,20 @@ public:
     uint32_t load_num = new_data[idx].count_num;
     uint32_t ans = 0;
     uint8_t funct3 = new_data[idx].funct3;
-
     int best_store = -1;
     uint32_t best_num = 0;
     for (int j = 0; j < LSQ_SIZE; j++) {
-      if (new_data[j].busy && new_data[j].type == LSQType::STORE &&
-          new_data[j].addr_ready && new_data[j].addr == addr &&
-          new_data[j].count_num < load_num &&
-          (best_store == -1 || new_data[j].count_num > best_num)) {
+      if (old_data[j].busy && old_data[j].type == LSQType::STORE &&
+          old_data[j].addr_ready && old_data[j].addr == addr &&
+          old_data[j].count_num < load_num &&
+          (best_store == -1 || old_data[j].count_num > best_num)) {
         best_store = j;
-        best_num = new_data[j].count_num;
+        best_num = old_data[j].count_num;
       }
     }
     if (best_store != -1) {
-      if (new_data[best_store].data_ready) {
-        ans = new_data[best_store].data;
+      if (old_data[best_store].data_ready) {
+        ans = old_data[best_store].data;
       } else {
         return;
       }
@@ -124,18 +124,18 @@ public:
   bool is_store(int idx) { return (old_data[idx].type == LSQType::STORE); }
   void remove(int idx) { new_data[idx].busy = false; }
   bool check_load_done(int idx) {
-    if (!new_data[idx].busy || new_data[idx].type != LSQType::LOAD) {
+    if (!old_data[idx].busy || old_data[idx].type != LSQType::LOAD) {
       return false;
     }
-    return (new_data[idx].addr_ready && new_data[idx].wait_cycles == 0 &&
-            new_data[idx].loaded);
+    return (old_data[idx].addr_ready && old_data[idx].wait_cycles == 0 &&
+            old_data[idx].loaded);
   }
   bool check_store_done(int idx) {
-    if (!new_data[idx].busy || new_data[idx].type != LSQType::STORE) {
+    if (!old_data[idx].busy || old_data[idx].type != LSQType::STORE) {
       return false;
     }
-    return (new_data[idx].addr_ready && new_data[idx].data_ready &&
-            new_data[idx].wait_cycles == 0);
+    return (old_data[idx].addr_ready && old_data[idx].data_ready &&
+            old_data[idx].wait_cycles == 0);
   }
   void flush() {
     for (int i = 0; i < LSQ_SIZE; i++) {
@@ -144,13 +144,13 @@ public:
   }
   void listen_cdb(uint8_t tag, uint32_t value) {
     for (int i = 0; i < LSQ_SIZE; i++) {
-      if (new_data[i].busy) {
-        if (!new_data[i].addr_ready && new_data[i].addr_tag != 0 && new_data[i].addr_tag == tag) {
+      if (old_data[i].busy) {
+        if (!old_data[i].addr_ready && old_data[i].addr_tag != 0 && old_data[i].addr_tag == tag) {
           new_data[i].addr_ready = true;
           new_data[i].addr = value + new_data[i].imm;
         }
-        if (new_data[i].type == LSQType::STORE && !new_data[i].data_ready &&
-            new_data[i].store_data_tag == tag) {
+        if (old_data[i].type == LSQType::STORE && !old_data[i].data_ready &&
+            old_data[i].store_data_tag == tag) {
           new_data[i].data_ready = true;
           new_data[i].data = value;
         }
