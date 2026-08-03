@@ -20,35 +20,31 @@ public:
       old_status[i] = new_status[i] = (RegStatus){1, 0, 0};
     }
   }
-  uint32_t read(uint8_t addr) const {
-    return old_reg[addr];
-  }
+  uint32_t read(uint8_t addr) const { return old_reg[addr]; }
   void write(uint8_t addr, uint32_t val) {
     if (addr == 0) {
-      return ;
+      return;
     }
     new_reg[addr] = val;
   }
-  RegStatus get_status(uint8_t addr) const {
-    return old_status[addr];
-  }
+  RegStatus get_status(uint8_t addr) const { return old_status[addr]; }
   void set_waiting(uint8_t addr, uint8_t waiting_tag) {
     if (addr == 0) {
-      return ;
+      return;
     }
     new_status[addr] = (RegStatus){0, 0, waiting_tag};
   }
   void update_from_cdb(uint8_t waiting_tag, uint32_t value) {
     for (int i = 0; i < 32; i++) {
-      if (!new_status[i].ready && new_status[i].tag != 0 && new_status[i].tag == waiting_tag) {
+      if (!old_status[i].ready && old_status[i].tag != 0 &&
+          old_status[i].tag == waiting_tag) {
         new_status[i] = (RegStatus){1, value, 0};
       }
     }
   }
   void flush() {
     for (int i = 0; i < 32; i++) {
-      new_status[i] = (RegStatus) {true, new_reg[i], 0};
-      old_status[i] = new_status[i];
+      new_status[i] = (RegStatus){true, new_reg[i], 0};
     }
   }
   void tick() {

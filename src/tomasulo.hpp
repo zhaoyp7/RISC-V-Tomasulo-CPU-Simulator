@@ -27,8 +27,8 @@ private:
   int cycles;
   uint32_t count;
 
-  void commit_stage() {
-    if (!rob.check_commit()) {
+  void commit_stage(bool &flushed) {
+    if (!rob.check_commit() || flushed) {
       return;
     }
     ROBData data = rob.commit();
@@ -43,6 +43,7 @@ private:
       bp.update(data.pc, data.go_branch, flag);
       if (flag != data.go_branch) {
         halt = false;
+        flushed = true;
         rob.flush();
         rs.flush();
         lsq.flush();
@@ -51,7 +52,10 @@ private:
       }
     }
   }
-  void writeback_stage() {
+  void writeback_stage(bool flushed) {
+    if (flushed) {
+      return ;
+    }
     for (int i = 0; i < RS_SIZE; i++) {
       if (rs.check_done(i)) {
         ALUResult alu = rs.get_result(i);
@@ -77,8 +81,8 @@ private:
       }
     }
   }
-  void cdb_listen_stage() {
-    if (!cdb.has_broadcast()) {
+  void cdb_listen_stage(bool flushed) {
+    if (!cdb.has_broadcast() || flushed) {
       return;
     }
     CDBData data = cdb.get_broadcast();
@@ -86,7 +90,10 @@ private:
     lsq.listen_cdb(data.tag, data.value);
     reg.update_from_cdb(data.tag, data.value);
   }
-  void execute_stage() {
+  void execute_stage(bool flushed) {
+    if (flushed) {
+      return ;
+    }
     rs.execute();
     lsq.execute(mem);
     for (int i = 0; i < LSQ_SIZE; i++) {
@@ -95,9 +102,12 @@ private:
       }
     }
   }
-  void issue_stage() {
+  void issue_stage(bool flushed) {
     if (halt || rs.check_full() || lsq.check_full() || rob.check_full()) {
       return;
+    }
+    if (flushed) {
+      return ;
     }
     uint32_t ins, pred_pc;
     fetch.fetch(ins, pred_pc);
@@ -180,11 +190,12 @@ public:
   void bp_result() { bp.debug(); }
   void step() {
     cycles++;
-    commit_stage();
-    writeback_stage();
-    cdb_listen_stage();
-    issue_stage();
-    execute_stage();
+    bool flushed = false;
+    commit_stage(flushed);
+    writeback_stage(flushed);
+    cdb_listen_stage(flushed);
+    execute_stage(flushed);
+    issue_stage(flushed);
     tick_stage();
   }
 };
