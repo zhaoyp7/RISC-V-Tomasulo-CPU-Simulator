@@ -31,7 +31,7 @@ public:
   int insert(const DecodedIns &inst, uint8_t tag, uint32_t Vj, uint32_t Vk,
              uint8_t Qj, uint8_t Qk, uint32_t pc) {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (new_data[i].busy == false) {
+      if (old_data[i].busy == false) {
         new_data[i] = (RSData){true, inst, Vj, Vk, Qj,
                                Qk,   tag,  pc, 1,  (inst.opcode == 0x63)};
         return i;
@@ -41,7 +41,7 @@ public:
   }
   bool check_full() {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (new_data[i].busy == false) {
+      if (old_data[i].busy == false) {
         return false;
       }
     }
@@ -57,8 +57,8 @@ public:
   }
   void execute() {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (new_data[i].busy && new_data[i].Qj == 0 && new_data[i].Qk == 0 &&
-          new_data[i].wait_cycles) {
+      if (old_data[i].busy && old_data[i].Qj == 0 && old_data[i].Qk == 0 &&
+          old_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
       }
     }
@@ -84,12 +84,12 @@ public:
   }
   void listen_cdb(uint8_t tag, uint32_t value) {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (new_data[i].busy) {
-        if (new_data[i].Qj != 0 && new_data[i].Qj == tag) {
+      if (old_data[i].busy) {
+        if (old_data[i].Qj != 0 && old_data[i].Qj == tag) {
           new_data[i].Vj = value;
           new_data[i].Qj = 0;
         }
-        if (new_data[i].Qk != 0 && new_data[i].Qk == tag) {
+        if (old_data[i].Qk != 0 && old_data[i].Qk == tag) {
           new_data[i].Vk = value;
           new_data[i].Qk = 0;
         }
