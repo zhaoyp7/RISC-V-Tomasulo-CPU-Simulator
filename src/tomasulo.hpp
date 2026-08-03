@@ -39,12 +39,11 @@ private:
       reg.write(data.dest, data.value);
     }
     if (data.is_branch) {
-      bp.predict(data.pc);
-      bp.update(data.pc, data.go_branch);
       bool flag = (data.pred_pc != data.pc + 4);
+      bp.update(data.pc, data.go_branch, flag);
       if (flag != data.go_branch) {
         halt = false;
-        rob.flush_all();
+        rob.flush();
         rs.flush();
         lsq.flush();
         reg.flush();

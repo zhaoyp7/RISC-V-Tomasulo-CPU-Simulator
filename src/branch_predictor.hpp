@@ -19,15 +19,14 @@ public:
   }
   bool predict(uint32_t pc) {
     int idx = (pc >> 2) & SIZE_MASK;
-    total++;
     if (visited[idx] == false) {
       return true;
     }
     return result[idx];
   }
-  void update(uint32_t pc, bool feedback) {
+  void update(uint32_t pc, bool feedback, bool predict) {
     int idx = (pc >> 2) & SIZE_MASK;
-    bool predict = visited[idx] ? result[idx] : true;
+    total++;
     correct += (predict == feedback);
     visited[idx] = true;
     result[idx] = feedback;

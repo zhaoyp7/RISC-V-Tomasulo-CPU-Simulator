@@ -102,18 +102,11 @@ public:
     new_head = (new_head + 1) % ROB_SIZE;
     return old_data[idx];
   }
-  void flush(int idx) {
-    while (new_tail != idx) {
-      new_tail = (new_tail - 1 + ROB_SIZE) % ROB_SIZE;
-      new_data[new_tail].busy = false;
+  void flush() {
+    for (int i = 0; i < ROB_SIZE; i++) {
+      new_data[i].busy = false;
     }
-    new_head = idx;
-  }
-  void flush_all() {
-    while (new_tail != new_head) {
-      new_tail = (new_tail - 1 + ROB_SIZE) % ROB_SIZE;
-      new_data[new_tail].busy = false;
-    }
+    new_head = new_tail = 0;
   }
   void tick() {
     for (int i = 0; i < ROB_SIZE; i++) {
