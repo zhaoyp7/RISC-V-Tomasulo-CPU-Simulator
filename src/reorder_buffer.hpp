@@ -2,6 +2,7 @@
 
 #include "decoder.hpp"
 #include <cstdint>
+#include <cstdio>
 
 const int ROB_SIZE = 8;
 
@@ -19,6 +20,10 @@ struct ROBData {
   uint32_t pred_pc;
   uint32_t actual_pc;
   int lsq_idx;
+  void debug() {
+    if (!busy) {puts("idle");return ;}
+    printf("%d %d %u %u %d %d %u %u %u %d\n",busy,(int)state,value,dest,is_branch,go_branch,pc,pred_pc,actual_pc,lsq_idx);
+  }
 };
 
 class ReorderBuffer {
@@ -111,5 +116,12 @@ public:
     }
     old_head = new_head;
     old_tail = new_tail;
+  }
+  void debug() {
+    puts("ROB debug");
+    printf("old_head = %d, old_tail = %d\n",old_head,old_tail);
+    for (int i = 0; i < ROB_SIZE; i++) old_data[i].debug();
+    printf("new_head = %d, new_tail = %d\n",new_head,new_tail);
+    for (int i = 0; i < ROB_SIZE; i++) new_data[i].debug();
   }
 };

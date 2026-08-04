@@ -3,6 +3,7 @@
 #include "alu.hpp"
 #include "decoder.hpp"
 #include <cstdint>
+#include <cstdio>
 
 const int RS_SIZE = 8;
 
@@ -15,6 +16,10 @@ struct RSData {
   uint32_t pc;
   int wait_cycles;
   bool is_branch;
+  void debug() {
+    if (!busy) {puts("idle");return ;}
+    printf("%d %u %u %u %u %u %u %d %d\n",busy,Vj,Vk,Qj,Qk,tag,pc,wait_cycles,is_branch);
+  }
 };
 
 class ReservationStation {
@@ -100,5 +105,12 @@ public:
     for (int i = 0; i < RS_SIZE; i++) {
       old_data[i] = new_data[i];
     }
+  }
+  void debug() {
+    puts("RS debug");
+    puts("OLD DEBUG");
+    for (int i = 0; i < RS_SIZE; i++) old_data[i].debug();
+    puts("NEW DEBUG");
+    for (int i = 0; i < RS_SIZE; i++) new_data[i].debug();
   }
 };

@@ -67,7 +67,7 @@ private:
         }
         rob.set_write(tag, alu.value);
         rs.remove(i);
-        cdb_listen_stage();
+        cdb_listen_stage(0);
         return;
       }
     }
@@ -78,13 +78,13 @@ private:
         cdb.broadcast(tag, value);
         rob.set_write(tag, value);
         lsq.remove(i);
-        cdb_listen_stage();
+        cdb_listen_stage(0);
         return;
       }
     }
   }
-  void cdb_listen_stage() {
-    if (!cdb.has_broadcast()) {
+  void cdb_listen_stage(bool flushed) {
+    if (!cdb.has_broadcast() || flushed) {
       return;
     }
     CDBData data = cdb.get_broadcast();
@@ -125,8 +125,6 @@ private:
       RegStatus tmp = reg.get_status(inst.rs1);
       if (tmp.ready) {
         Vj = tmp.value;
-      // } else if (cdb.has_broadcast() && cdb.get_broadcast().tag == tmp.tag) {
-      //   Vj = cdb.get_broadcast().value;
       } else {
         Qj = tmp.tag;
       }
@@ -135,8 +133,6 @@ private:
       RegStatus tmp = reg.get_status(inst.rs2);
       if (tmp.ready) {
         Vk = tmp.value;
-      // } else if (cdb.has_broadcast() && cdb.get_broadcast().tag == tmp.tag && (inst.opcode == 0x23)) {
-      //   Vk = cdb.get_broadcast().value;
       } else {
         Qk = tmp.tag;
       }
@@ -159,21 +155,12 @@ private:
       int rs_idx = rs.insert(inst, tag, Vj, Vk, Qj, Qk, pc);
     }
   }
-  void tick_stage() {
-    // for (int i = 0; i < LSQ_SIZE; i++) {
-    //   if (lsq.new_data[i].busy && lsq.new_data[i].type == LSQType::STORE) {
-    //     if (!lsq.new_data[i].data_ready && lsq.new_data[i].store_data_tag == cdb.get_broadcast().tag) {
-    //       lsq.new_data[i].data_ready = true;
-    //       lsq.new_data[i].data = cdb.get_broadcast().value;
-    //       lsq.new_data[i].store_data_tag = 0;
-    //     }
-    //   }
-    // }
+  void tick_stage(bool flushed) {
     reg.tick();
     rob.tick();
     rs.tick();
     lsq.tick();
-    cdb_listen_stage();
+    cdb_listen_stage(flushed);
     cdb.tick();
   }
   bool need_rs1(const DecodedIns &inst) {
@@ -203,14 +190,21 @@ public:
   void step() {
     cycles++;
     // printf("cycles = %d\n",cycles);
+    // rob.debug();
+    // rs.debug();
+    // reg.debug();
     bool flushed = false;
-    
-    
-    commit_stage(flushed);
     writeback_stage(flushed);
-    execute_stage(flushed);
     issue_stage(flushed);
-
-    tick_stage();
+    // if (cycles == 3) reg.debug();
+    commit_stage(flushed);
+    // if (cycles == 3) reg.debug();
+    execute_stage(flushed);
+    // rob.debug();
+    // rs.debug();
+    // if (cycles == 3) reg.debug();
+    // cdb_listen_stage(0);
+    tick_stage(flushed);
+    // if (cycles == 3) exit(0);
   }
 };

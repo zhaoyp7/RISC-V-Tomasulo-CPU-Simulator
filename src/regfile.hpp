@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
 
 struct RegStatus {
   bool ready;
@@ -44,7 +45,7 @@ public:
   }
   void flush() {
     for (int i = 0; i < 32; i++) {
-      new_status[i] = (RegStatus){true, new_reg[i], 0};
+      new_status[i] = (RegStatus){true, old_reg[i], 0};
     }
   }
   void tick() {
@@ -52,5 +53,12 @@ public:
       old_reg[i] = new_reg[i];
       old_status[i] = new_status[i];
     }
+  }
+  void debug() {
+    puts("REG debug");
+    puts("OLD DEBUG");
+    for (int i = 0; i < 32; i++) printf("%u %d %u %u\n",old_reg[i],old_status[i].ready,old_status[i].tag,old_status[i].value);
+    puts("NEW DEBUG");
+    for (int i = 0; i < 32; i++) printf("%u %d %u %u\n",new_reg[i],new_status[i].ready,new_status[i].tag,new_status[i].value);
   }
 };
