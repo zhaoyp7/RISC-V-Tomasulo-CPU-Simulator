@@ -28,7 +28,7 @@ private:
   int cycles;
   uint32_t count;
 
-  void commit_stage(bool &flushed) {
+  void ROB_stage(bool &flushed) {
     if (!rob.check_commit() || flushed) {
       return;
     }
@@ -118,7 +118,7 @@ private:
     lsq.listen_cdb(data.tag, data.value);
     reg.update_from_cdb(data.tag, data.value);
   }
-  void issue_stage(bool flushed) {
+  void Fetch_stage(bool flushed) {
     if (halt || rs.check_full() || lsq.check_full() || rob.check_full()) {
       return;
     }
@@ -153,7 +153,7 @@ private:
     }
     int tag = rob.insert(inst, pc, pred_pc);
     if (need_rd(inst)) {
-      reg.set_waiting(inst.rd, tag);
+      reg.set_tag(inst.rd, tag);
     }
     if (inst.opcode == 0x03) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
@@ -205,11 +205,12 @@ public:
   void step() {
     cycles++;
     bool flushed = false;
-    RS_stage(flushed);
+    Fetch_stage(flushed);
     LSQ_stage(flushed);
-    issue_stage(flushed);
-    commit_stage(flushed);
+    ROB_stage(flushed);
     alu.run();
+    RS_stage(flushed);
+    
     tick_stage(flushed);
   }
 };
