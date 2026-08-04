@@ -18,10 +18,13 @@ struct LSQData {
   uint32_t imm;
   bool loaded;
   uint32_t count_num;
+  void debug() {
+    // printf("%d %d %u %d %d %u %u %u %u %u %d %u %d %u\n",busy,(type == ))
+  }
 };
 
 class LoadStoreQueue {
-private:
+public:
   LSQData old_data[LSQ_SIZE];
   LSQData new_data[LSQ_SIZE];
 
@@ -155,12 +158,14 @@ public:
         if (!old_data[i].addr_ready && old_data[i].addr_tag != 0 &&
             old_data[i].addr_tag == tag) {
           new_data[i].addr_ready = true;
-          new_data[i].addr = value + new_data[i].imm;
+          new_data[i].addr = value + old_data[i].imm;
+          new_data[i].addr_tag = 0;
         }
         if (old_data[i].type == LSQType::STORE && !old_data[i].data_ready &&
             old_data[i].store_data_tag == tag) {
           new_data[i].data_ready = true;
           new_data[i].data = value;
+          new_data[i].store_data_tag = 0;
         }
       }
     }

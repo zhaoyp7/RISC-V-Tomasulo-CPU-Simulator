@@ -67,6 +67,7 @@ private:
         }
         rob.set_write(tag, alu.value);
         rs.remove(i);
+        cdb_listen_stage();
         return;
       }
     }
@@ -77,12 +78,13 @@ private:
         cdb.broadcast(tag, value);
         rob.set_write(tag, value);
         lsq.remove(i);
+        cdb_listen_stage();
         return;
       }
     }
   }
-  void cdb_listen_stage(bool flushed) {
-    if (!cdb.has_broadcast() || flushed) {
+  void cdb_listen_stage() {
+    if (!cdb.has_broadcast()) {
       return;
     }
     CDBData data = cdb.get_broadcast();
@@ -123,8 +125,8 @@ private:
       RegStatus tmp = reg.get_status(inst.rs1);
       if (tmp.ready) {
         Vj = tmp.value;
-      } else if (cdb.has_broadcast() && cdb.get_broadcast().tag == tmp.tag) {
-        Vj = cdb.get_broadcast().value;
+      // } else if (cdb.has_broadcast() && cdb.get_broadcast().tag == tmp.tag) {
+      //   Vj = cdb.get_broadcast().value;
       } else {
         Qj = tmp.tag;
       }
@@ -133,8 +135,8 @@ private:
       RegStatus tmp = reg.get_status(inst.rs2);
       if (tmp.ready) {
         Vk = tmp.value;
-      } else if (cdb.has_broadcast() && cdb.get_broadcast().tag == tmp.tag) {
-        Vk = cdb.get_broadcast().value;
+      // } else if (cdb.has_broadcast() && cdb.get_broadcast().tag == tmp.tag && (inst.opcode == 0x23)) {
+      //   Vk = cdb.get_broadcast().value;
       } else {
         Qk = tmp.tag;
       }
@@ -158,11 +160,21 @@ private:
     }
   }
   void tick_stage() {
+    // for (int i = 0; i < LSQ_SIZE; i++) {
+    //   if (lsq.new_data[i].busy && lsq.new_data[i].type == LSQType::STORE) {
+    //     if (!lsq.new_data[i].data_ready && lsq.new_data[i].store_data_tag == cdb.get_broadcast().tag) {
+    //       lsq.new_data[i].data_ready = true;
+    //       lsq.new_data[i].data = cdb.get_broadcast().value;
+    //       lsq.new_data[i].store_data_tag = 0;
+    //     }
+    //   }
+    // }
     reg.tick();
     rob.tick();
-    cdb.tick();
     rs.tick();
     lsq.tick();
+    cdb_listen_stage();
+    cdb.tick();
   }
   bool need_rs1(const DecodedIns &inst) {
     return inst.opcode == 0x33 || inst.opcode == 0x13 || inst.opcode == 0x03 ||
@@ -190,12 +202,15 @@ public:
   void bp_result() { bp.debug(); }
   void step() {
     cycles++;
+    // printf("cycles = %d\n",cycles);
     bool flushed = false;
+    
+    
     commit_stage(flushed);
     writeback_stage(flushed);
-    cdb_listen_stage(flushed);
     execute_stage(flushed);
     issue_stage(flushed);
+
     tick_stage();
   }
 };
