@@ -17,8 +17,12 @@ struct RSData {
   int wait_cycles;
   bool is_branch;
   void debug() {
-    if (!busy) {puts("idle");return ;}
-    printf("%d %u %u %u %u %u %u %d %d\n",busy,Vj,Vk,Qj,Qk,tag,pc,wait_cycles,is_branch);
+    if (!busy) {
+      puts("idle");
+      return;
+    }
+    printf("%d %u %u %u %u %u %u %d %d\n", busy, Vj, Vk, Qj, Qk, tag, pc,
+           wait_cycles, is_branch);
   }
 };
 
@@ -68,13 +72,11 @@ public:
       }
     }
   }
-  ALUResult get_result(int idx) {
-    ALUResult alu = ALU::execute(old_data[idx].inst, old_data[idx].Vj,
-                                 old_data[idx].Vk, old_data[idx].pc);
-    return alu;
-  }
   uint8_t get_tag(int idx) { return old_data[idx].tag; }
   uint32_t get_pc(int idx) { return old_data[idx].pc; }
+  uint32_t get_Vj(int idx) { return old_data[idx].Vj; }
+  uint32_t get_Vk(int idx) { return old_data[idx].Vk; }
+  DecodedIns get_inst(int idx) { return old_data[idx].inst; }
   void remove(int idx) { new_data[idx].busy = false; }
   bool check_ready(int idx) {
     return (old_data[idx].busy && !old_data[idx].Qj && !old_data[idx].Qk);
@@ -109,8 +111,10 @@ public:
   void debug() {
     puts("RS debug");
     puts("OLD DEBUG");
-    for (int i = 0; i < RS_SIZE; i++) old_data[i].debug();
+    for (int i = 0; i < RS_SIZE; i++)
+      old_data[i].debug();
     puts("NEW DEBUG");
-    for (int i = 0; i < RS_SIZE; i++) new_data[i].debug();
+    for (int i = 0; i < RS_SIZE; i++)
+      new_data[i].debug();
   }
 };

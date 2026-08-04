@@ -23,6 +23,7 @@ private:
   ReservationStation rs;
   LoadStoreQueue lsq;
   BranchPredictor bp;
+  ALU alu;
   bool halt;
   int cycles;
   uint32_t count;
@@ -52,23 +53,48 @@ private:
       }
     }
   }
-  void writeback_stage(bool flushed) {
+  void RS_stage(bool flushed) {
     if (flushed) {
-      return ;
+      return;
+    }
+    rs.execute();
+    if (cdb.has_broadcast()) {
+      return;
     }
     for (int i = 0; i < RS_SIZE; i++) {
       if (rs.check_done(i)) {
-        ALUResult alu = rs.get_result(i);
+        alu.set_alu(rs.get_inst(i), rs.get_Vj(i), rs.get_Vk(i), rs.get_pc(i),
+                    rs.get_tag(i));
+        break;
+      }
+    }
+    for (int i = 0; i < RS_SIZE; i++) {
+      if (alu.get_result_tag() == rs.get_tag(i) && rs.check_done(i)) {
+        ALUResult res = alu.get_result();
         uint8_t tag = rs.get_tag(i);
-        cdb.broadcast(tag, alu.value);
-        if (alu.is_branch) {
-          uint32_t actual_pc = alu.go_branch ? alu.next_pc : rs.get_pc(i) + 4;
-          rob.set_branch(tag, alu.go_branch, actual_pc);
+        cdb.broadcast(tag, res.value);
+        if (res.is_branch) {
+          uint32_t actual_pc = res.go_branch ? res.next_pc : rs.get_pc(i) + 4;
+          rob.set_branch(tag, res.go_branch, actual_pc);
         }
-        rob.set_write(tag, alu.value);
+        rob.set_write(tag, res.value);
         rs.remove(i);
         cdb_listen_stage(0);
         return;
+      }
+    }
+  }
+  void LSQ_stage(bool flushed) {
+    if (flushed) {
+      return;
+    }
+    lsq.execute(mem);
+    if (cdb.has_broadcast()) {
+      return;
+    }
+    for (int i = 0; i < LSQ_SIZE; i++) {
+      if (lsq.check_store_done(i)) {
+        rob.set_write(lsq.get_tag(i), 0);
       }
     }
     for (int i = 0; i < LSQ_SIZE; i++) {
@@ -92,24 +118,12 @@ private:
     lsq.listen_cdb(data.tag, data.value);
     reg.update_from_cdb(data.tag, data.value);
   }
-  void execute_stage(bool flushed) {
-    if (flushed) {
-      return ;
-    }
-    rs.execute();
-    lsq.execute(mem);
-    for (int i = 0; i < LSQ_SIZE; i++) {
-      if (lsq.check_store_done(i)) {
-        rob.set_write(lsq.get_tag(i), 0);
-      }
-    }
-  }
   void issue_stage(bool flushed) {
     if (halt || rs.check_full() || lsq.check_full() || rob.check_full()) {
       return;
     }
     if (flushed) {
-      return ;
+      return;
     }
     uint32_t ins, pred_pc;
     fetch.fetch(ins, pred_pc);
@@ -144,7 +158,7 @@ private:
     if (inst.opcode == 0x03) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
       int lsq_idx = lsq.insert(inst.opcode, tag, inst.funct3, addr, (Qj == 0),
-                                0, 0, true, Qj, inst.imm, count++);
+                               0, 0, true, Qj, inst.imm, count++);
       rob.set_lsq_idx(tag, lsq_idx);
     } else if (inst.opcode == 0x23) {
       uint32_t addr = (Qj == 0) ? Vj + inst.imm : 0;
@@ -160,6 +174,7 @@ private:
     rob.tick();
     rs.tick();
     lsq.tick();
+    alu.tick();
     cdb_listen_stage(flushed);
     cdb.tick();
   }
@@ -189,22 +204,12 @@ public:
   void bp_result() { bp.debug(); }
   void step() {
     cycles++;
-    // printf("cycles = %d\n",cycles);
-    // rob.debug();
-    // rs.debug();
-    // reg.debug();
     bool flushed = false;
-    writeback_stage(flushed);
+    RS_stage(flushed);
+    LSQ_stage(flushed);
     issue_stage(flushed);
-    // if (cycles == 3) reg.debug();
     commit_stage(flushed);
-    // if (cycles == 3) reg.debug();
-    execute_stage(flushed);
-    // rob.debug();
-    // rs.debug();
-    // if (cycles == 3) reg.debug();
-    // cdb_listen_stage(0);
+    alu.run();
     tick_stage(flushed);
-    // if (cycles == 3) exit(0);
   }
 };
