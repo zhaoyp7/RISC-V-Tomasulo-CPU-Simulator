@@ -18,6 +18,7 @@ struct LSQData {
   uint32_t imm;
   bool loaded;
   uint32_t count_num;
+  bool committed;
   void debug() {
     // printf("%d %d %u %d %d %u %u %u %u %u %d %u %d %u\n",busy,(type == ))
   }
@@ -120,12 +121,13 @@ public:
     uint32_t addr = old_data[idx].addr;
     uint32_t val = old_data[idx].data;
     uint8_t funct3 = old_data[idx].funct3;
+    new_data[idx].committed = true;
     if (funct3 == 0x0) {
-      mem.store_byte(addr, val & 0xFF);
+      mem.set_store(addr, val & 0xFF, idx, 1, old_data[idx].tag);
     } else if (funct3 == 0x1) {
-      mem.store_half_word(addr, val & 0xFFFF);
+      mem.set_store(addr, val & 0xFFFF, idx, 2, old_data[idx].tag);
     } else if (funct3 == 0x2) {
-      mem.store_word(addr, val);
+      mem.set_store(addr, val, idx, 4, old_data[idx].tag);
     }
   }
   uint32_t get_load_result(int idx) { return old_data[idx].data; }
@@ -145,7 +147,7 @@ public:
       return false;
     }
     return (old_data[idx].addr_ready && old_data[idx].data_ready &&
-            old_data[idx].wait_cycles == 0);
+            old_data[idx].wait_cycles == 0 && !old_data[idx].committed);
   }
   void flush() {
     for (int i = 0; i < LSQ_SIZE; i++) {

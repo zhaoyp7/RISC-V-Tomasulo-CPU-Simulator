@@ -28,6 +28,14 @@ private:
   int cycles;
   uint32_t count;
 
+  void Memory_stage() {
+    mem.run();
+    int lsq_idx = mem.get_lsq_idx();
+    uint8_t lsq_tag = mem.get_lsq_tag();
+    if (lsq_idx != -1 && lsq.get_tag(lsq_idx) == lsq_tag) {
+      lsq.remove(lsq_idx);
+    }
+  }
   void ROB_stage(bool &flushed) {
     if (!rob.check_commit() || flushed) {
       return;
@@ -35,7 +43,6 @@ private:
     ROBData data = rob.commit();
     if (data.inst.opcode == 0x23) {
       lsq.commit_write(data.lsq_idx, mem);
-      lsq.remove(data.lsq_idx);
     } else if (data.inst.opcode != 0x63) {
       reg.write(data.dest, data.value);
     }
@@ -58,15 +65,15 @@ private:
       return;
     }
     rs.execute();
-    if (cdb.has_broadcast()) {
-      return;
-    }
     for (int i = 0; i < RS_SIZE; i++) {
       if (rs.check_done(i)) {
         alu.set_alu(rs.get_inst(i), rs.get_Vj(i), rs.get_Vk(i), rs.get_pc(i),
                     rs.get_tag(i));
         break;
       }
+    }
+    if (cdb.has_broadcast()) {
+      return;
     }
     for (int i = 0; i < RS_SIZE; i++) {
       if (alu.get_result_tag() == rs.get_tag(i) && rs.check_done(i)) {
@@ -89,13 +96,13 @@ private:
       return;
     }
     lsq.execute(mem);
-    if (cdb.has_broadcast()) {
-      return;
-    }
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (lsq.check_store_done(i)) {
         rob.set_write(lsq.get_tag(i), 0);
       }
+    }
+    if (cdb.has_broadcast() || alu.get_result_ready()) {
+      return;
     }
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (lsq.check_load_done(i)) {
@@ -175,6 +182,7 @@ private:
     rs.tick();
     lsq.tick();
     alu.tick();
+    mem.tick();
     cdb_listen_stage(flushed);
     cdb.tick();
   }
@@ -205,12 +213,15 @@ public:
   void step() {
     cycles++;
     bool flushed = false;
+
+    alu.run();
+    ROB_stage(flushed);
     Fetch_stage(flushed);
     LSQ_stage(flushed);
-    ROB_stage(flushed);
-    alu.run();
     RS_stage(flushed);
-    
+    Memory_stage();
+
+
     tick_stage(flushed);
   }
 };
