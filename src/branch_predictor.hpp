@@ -7,29 +7,37 @@ class BranchPredictor {
 private:
   static const int SIZE = 1024;
   static const int SIZE_MASK = SIZE - 1;
-  bool visited[SIZE], result[SIZE];
+  // bool visited[SIZE], result[SIZE];
+  uint8_t count[SIZE];
   int total, correct;
 
 public:
   BranchPredictor() {
     total = correct = 0;
     for (int i = 0; i < SIZE; i++) {
-      visited[i] = result[i] = false;
+      // visited[i] = result[i] = false;
+      count[i] = 2;
     }
   }
   bool predict(uint32_t pc) {
     int idx = (pc >> 2) & SIZE_MASK;
-    if (visited[idx] == false) {
-      return true;
-    }
-    return result[idx];
+    return (count[idx] >= 2);
+    // if (visited[idx] == false) {
+    //   return true;
+    // }
+    // return result[idx];
   }
   void update(uint32_t pc, bool feedback, bool predict) {
     int idx = (pc >> 2) & SIZE_MASK;
     total++;
     correct += (predict == feedback);
-    visited[idx] = true;
-    result[idx] = feedback;
+    if (feedback && count[idx] < 3) {
+      count[idx]++;
+    } else if (!feedback && count[idx]) {
+      count[idx]--;
+    }
+    // visited[idx] = true;
+    // result[idx] = feedback;
   }
   void debug() {
     if (total == 0) {

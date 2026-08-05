@@ -1,6 +1,6 @@
 # RISC-V Tomasulo CPU Simulator
 
-用 C++20 实现的 RV32I 乱序执行 CPU 模拟器，采用 Tomasulo 算法 + 1-bit 分支预测。
+用 C++20 实现的 RV32I 乱序执行 CPU 模拟器，采用 Tomasulo 算法 + 2-bit 饱和计数器分支预测。
 
 ---
 
@@ -25,7 +25,7 @@
 ├── src/                        # Tomasulo 核心源码
 │   ├── tomasulo.hpp            # 顶层控制器，整合流水线阶段
 │   ├── alu.hpp                 # ALU 计算单元
-│   ├── branch_predictor.hpp    # 1-bit 分支预测器
+│   ├── branch_predictor.hpp    # 2-bit 饱和计数器分支预测器
 │   ├── cdb.hpp                 # 公共数据总线 (CDB)
 │   ├── decoder.hpp             # RV32I 指令译码器
 │   ├── fetch.hpp               # 取指单元
@@ -69,7 +69,6 @@
 表示：从 `0x00000000` 写入 `37 01 02 00 …`，从 `0x00001000` 写入后续字节。
 
 ---
----
 
 ## 4. 元件清单
 
@@ -83,16 +82,20 @@
 | Load/Store Queue | `src/load_store_queue.hpp` | 8 条 LSQ，含 store-to-load forwarding |
 | Common Data Bus | `src/cdb.hpp` | 每周期一条广播 |
 | Fetch | `src/fetch.hpp` | 从内存取指 |
-| Branch Predictor | `src/branch_predictor.hpp` | 1024 条目 1-bit 预测器 |
+| Branch Predictor | `src/branch_predictor.hpp` | 1024 条目 2-bit 饱和计数器预测器 |
 | Memory | `src/memory.hpp` | `std::map` 模拟内存 |
+
+---
 
 ## 5. 流水线阶段（每周期执行顺序可交换）
 
 ```
-commit → writeback → cdb_listen → execute → issue → tick(old←new)
+alu.run → ROB → Fetch → LSQ → RS → Memory → tick(old←new)
 ```
 
 各模块维护 `old_*` / `new_*` 双缓冲，阶段间只读写本周期状态，`tick()` 统一更新，模拟硬件并行。
+
+---
 
 ## 6. 构建方法
 
@@ -102,6 +105,8 @@ cmake .. -DCMAKE_CXX_STANDARD=20
 make code        # Tomasulo 版本
 make naive-code  # 单周期参考实现
 ```
+
+---
 
 ## 7. 批量测试
 
@@ -114,8 +119,8 @@ make naive-code  # 单周期参考实现
 ```
 Testcase             Cycles       Predictions  Accuracy     Status
 --------             ------       -----------  --------     ------
-array_test1          307          44           50.00%       PASS
-multiarray           2407         261          68.97%       PASS
+array_test1          562          44           52.27%       PASS
+multiarray           3647         261          72.80%       PASS
 ...
 ```
 
@@ -125,21 +130,21 @@ multiarray           2407         261          68.97%       PASS
 
 | 测试用例 | Cycles | 预测数 | 准确率 |
 |---------|--------|--------|--------|
-| array_test1 | 307 | 44 | 50.00% |
-| array_test2 | 339 | 50 | 54.00% |
-| basicopt1 | 873,754 | 190,750 | 66.00% |
-| bulgarian | 465,926 | 91,458 | 82.71% |
-| expr | 756 | 123 | 80.49% |
-| gcd | 806 | 171 | 57.89% |
-| hanoi | 241,588 | 28,207 | 65.47% |
-| lvalue2 | 82 | 14 | 42.86% |
-| magic | 718,819 | 89,279 | 71.03% |
-| manyarguments | 109 | 18 | 33.33% |
-| multiarray | 2,407 | 261 | 68.97% |
-| naive | 40 | 4 | 50.00% |
-| pi | 150,792,749 | 42,208,788 | 76.84% |
-| qsort | 1,827,577 | 268,671 | 77.93% |
-| queens | 824,847 | 99,701 | 60.43% |
-| statement_test | 1,657 | 280 | 52.14% |
-| superloop | 771,812 | 445,087 | 91.36% |
-| tak | 2,194,938 | 197,071 | 63.08% |
+| array_test1 | 562 | 44 | 52.27% |
+| array_test2 | 608 | 50 | 52.00% |
+| basicopt1 | 1,666,931 | 190,750 | 76.40% |
+| bulgarian | 810,375 | 91,458 | 85.99% |
+| expr | 1,626 | 123 | 80.49% |
+| gcd | 1,483 | 171 | 62.57% |
+| hanoi | 399,699 | 28,207 | 57.77% |
+| lvalue2 | 159 | 14 | 42.86% |
+| magic | 1,174,353 | 89,279 | 76.46% |
+| manyarguments | 195 | 18 | 33.33% |
+| multiarray | 3,647 | 261 | 72.80% |
+| naive | 73 | 4 | 50.00% |
+| pi | 329,009,083 | 42,208,788 | 80.67% |
+| qsort | 3,173,303 | 268,671 | 80.99% |
+| queens | 1,241,042 | 99,701 | 70.50% |
+| statement_test | 3,032 | 280 | 55.00% |
+| superloop | 1,677,360 | 445,087 | 93.96% |
+| tak | 3,502,132 | 197,071 | 61.17% |

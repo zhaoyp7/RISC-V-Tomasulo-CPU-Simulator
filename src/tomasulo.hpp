@@ -221,7 +221,6 @@ public:
     RS_stage(flushed);
     Memory_stage();
 
-
     tick_stage(flushed);
   }
 };
