@@ -13,12 +13,13 @@ private:
   CDBData bc;
 
 public:
-  CommonDataBus() {bc.flag = false;}
+  CommonDataBus() { bc.flag = false; }
   void broadcast(uint8_t tag, uint32_t value) {
-    bc.flag = true; bc.tag = tag; bc.value = value;
+    bc.flag = true;
+    bc.tag = tag;
+    bc.value = value;
   }
-  bool has_broadcast() { return bc.flag; }
-  CDBData get_broadcast() { return bc; }
+  bool has_broadcast() const { return bc.flag; }
+  CDBData get_broadcast() const { return bc; }
   void tick() { bc.flag = false; }
-
 };

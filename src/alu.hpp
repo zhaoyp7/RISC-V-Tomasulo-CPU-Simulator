@@ -141,9 +141,9 @@ public:
     new_data_tag = tag;
     new_data_ready = true;
   }
-  ALUResult get_result() { return old_res; }
-  int get_result_tag() { return old_result_ready ? old_result_tag : -1; }
-  bool get_result_ready() { return old_result_ready; }
+  ALUResult get_result() const { return old_res; }
+  int get_result_tag() const { return old_result_ready ? old_result_tag : -1; }
+  bool get_result_ready() const { return old_result_ready; }
   void tick() {
     old_inst = new_inst;
     old_rs1 = new_rs1;

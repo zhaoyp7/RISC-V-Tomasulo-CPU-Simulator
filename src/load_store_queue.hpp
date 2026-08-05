@@ -19,9 +19,6 @@ struct LSQData {
   bool loaded;
   uint32_t count_num;
   bool committed;
-  void debug() {
-    // printf("%d %d %u %d %d %u %u %u %u %u %d %u %d %u\n",busy,(type == ))
-  }
 };
 
 class LoadStoreQueue {
@@ -49,7 +46,7 @@ public:
     }
     return -1;
   }
-  bool check_full() {
+  bool check_full() const {
     for (int i = 0; i < LSQ_SIZE; i++) {
       if (old_data[i].busy == false) {
         return false;
@@ -130,19 +127,21 @@ public:
       mem.set_store(addr, val, idx, 4, old_data[idx].tag);
     }
   }
-  uint32_t get_load_result(int idx) { return old_data[idx].data; }
-  uint8_t get_tag(int idx) { return old_data[idx].tag; }
-  bool is_load(int idx) { return (old_data[idx].type == LSQType::LOAD); }
-  bool is_store(int idx) { return (old_data[idx].type == LSQType::STORE); }
+  uint32_t get_load_result(int idx) const { return old_data[idx].data; }
+  uint8_t get_tag(int idx) const { return old_data[idx].tag; }
+  bool is_load(int idx) const { return (old_data[idx].type == LSQType::LOAD); }
+  bool is_store(int idx) const {
+    return (old_data[idx].type == LSQType::STORE);
+  }
   void remove(int idx) { new_data[idx].busy = false; }
-  bool check_load_done(int idx) {
+  bool check_load_done(int idx) const {
     if (!old_data[idx].busy || old_data[idx].type != LSQType::LOAD) {
       return false;
     }
     return (old_data[idx].addr_ready && old_data[idx].wait_cycles == 0 &&
             old_data[idx].loaded);
   }
-  bool check_store_done(int idx) {
+  bool check_store_done(int idx) const {
     if (!old_data[idx].busy || old_data[idx].type != LSQType::STORE) {
       return false;
     }

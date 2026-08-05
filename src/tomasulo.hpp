@@ -206,9 +206,9 @@ public:
     count = 0;
   }
   void init() { mem.init(); }
-  bool check_done() { return (halt && rob.check_empty()); }
-  uint32_t get_result() { return (reg.read(10) & 0xFF); }
-  int get_cycles() { return cycles; }
+  bool check_done() const { return (halt && rob.check_empty()); }
+  uint32_t get_result() const { return (reg.read(10) & 0xFF); }
+  int get_cycles() const { return cycles; }
   void bp_result() { bp.debug(); }
   void step() {
     cycles++;

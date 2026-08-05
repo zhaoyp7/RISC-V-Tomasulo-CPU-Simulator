@@ -42,7 +42,8 @@ public:
   }
   void update_from_cdb(uint8_t tag, uint32_t value) {
     for (int i = 0; i < 32; i++) {
-      if (!old_status[i].ready && old_status[i].tag != 0 && old_status[i].tag == tag) {
+      if (!old_status[i].ready && old_status[i].tag != 0 &&
+          old_status[i].tag == tag) {
         new_cdb_update[i] = true;
         new_cdb_status[i] = (RegStatus){true, value, 0};
       }

@@ -92,13 +92,6 @@ public:
     new_len = len;
     new_lsq_idx = lsq_idx;
     new_lsq_tag = tag;
-    // if (len == 1) {
-    //   store_byte(addr, val);
-    // } else if (len == 2) {
-    //   store_half_word(addr, val);
-    // } else if (len == 4) {
-    //   store_word(addr, val);
-    // }
   }
   void run() {
     if (old_lsq_idx == -1) {
@@ -120,6 +113,6 @@ public:
     old_lsq_tag = new_lsq_tag;
     new_lsq_idx = -1;
   }
-  int get_lsq_idx() { return old_lsq_idx; }
-  int get_lsq_tag() { return old_lsq_tag; }
+  int get_lsq_idx() const { return old_lsq_idx; }
+  int get_lsq_tag() const { return old_lsq_tag; }
 };

@@ -9,14 +9,14 @@ private:
   uint32_t pc, last_pc;
   Memory &mem;
   BranchPredictor &bp;
-  uint32_t decode_J_imm(uint32_t inst) {
+  uint32_t decode_J_imm(uint32_t inst) const {
     uint32_t imm = (int32_t(inst) >> 31) << 20;
     imm |= ((inst >> 12) & 0xFF) << 12;
     imm |= ((inst >> 20) & 0x1) << 11;
     imm |= ((inst >> 21) & 0x3FF) << 1;
     return imm;
   }
-  uint32_t decode_B_imm(uint32_t inst) {
+  uint32_t decode_B_imm(uint32_t inst) const {
     uint32_t imm = (int32_t(inst) >> 31) << 12;
     imm |= ((inst >> 7) & 0x1) << 11;
     imm |= ((inst >> 25) & 0x3F) << 5;
@@ -41,5 +41,5 @@ public:
     pc = pred_pc;
   }
   void recover_pc(uint32_t actual_pc) { pc = actual_pc; }
-  uint32_t get_pc() { return last_pc; }
+  uint32_t get_pc() const { return last_pc; }
 };

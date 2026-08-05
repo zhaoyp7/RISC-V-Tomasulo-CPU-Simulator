@@ -21,8 +21,12 @@ struct ROBData {
   uint32_t actual_pc;
   int lsq_idx;
   void debug() {
-    if (!busy) {puts("idle");return ;}
-    printf("%d %d %u %u %d %d %u %u %u %d\n",busy,(int)state,value,dest,is_branch,go_branch,pc,pred_pc,actual_pc,lsq_idx);
+    if (!busy) {
+      puts("idle");
+      return;
+    }
+    printf("%d %d %u %u %d %d %u %u %u %d\n", busy, (int)state, value, dest,
+           is_branch, go_branch, pc, pred_pc, actual_pc, lsq_idx);
   }
 };
 
@@ -72,13 +76,13 @@ public:
     int idx = tag - 1;
     new_data[idx].lsq_idx = lsq_idx;
   }
-  bool check_full() { return (old_data[old_tail].busy); }
-  bool check_empty() { return (old_data[old_head].busy == false); }
-  bool is_branch(int tag) {
+  bool check_full() const { return (old_data[old_tail].busy); }
+  bool check_empty() const { return (old_data[old_head].busy == false); }
+  bool is_branch(int tag) const {
     int idx = tag - 1;
     return old_data[idx].is_branch;
   }
-  bool is_store(int tag) {
+  bool is_store(int tag) const {
     int idx = tag - 1;
     return (old_data[idx].inst.opcode == 0x23);
   }
@@ -90,7 +94,7 @@ public:
     int idx = tag - 1;
     return old_data[idx].lsq_idx;
   }
-  bool check_commit() {
+  bool check_commit() const {
     int idx = old_head;
     if (old_data[idx].busy == false) {
       return false;
@@ -119,9 +123,13 @@ public:
   }
   void debug() {
     puts("ROB debug");
-    printf("old_head = %d, old_tail = %d\n",old_head,old_tail);
-    for (int i = 0; i < ROB_SIZE; i++) old_data[i].debug();
-    printf("new_head = %d, new_tail = %d\n",new_head,new_tail);
-    for (int i = 0; i < ROB_SIZE; i++) new_data[i].debug();
+    printf("old_head = %d, old_tail = %d\n", old_head, old_tail);
+    for (int i = 0; i < ROB_SIZE; i++) {
+      old_data[i].debug();
+    }
+    printf("new_head = %d, new_tail = %d\n", new_head, new_tail);
+    for (int i = 0; i < ROB_SIZE; i++) {
+      new_data[i].debug();
+    }
   }
 };
