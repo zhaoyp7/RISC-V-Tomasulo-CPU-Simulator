@@ -1,6 +1,5 @@
 #pragma once
 
-#include "alu.hpp"
 #include "decoder.hpp"
 #include <cstdint>
 #include <cstdio>
@@ -56,9 +55,12 @@ public:
     }
     return true;
   }
+  bool check_ready(int idx) const {
+    return (old_data[idx].busy && !old_data[idx].Qj && !old_data[idx].Qk);
+  }
   int find_ready() const {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (old_data[i].busy && old_data[i].Qj == 0 && old_data[i].Qk == 0) {
+      if (check_ready(i)) {
         return i;
       }
     }
@@ -66,8 +68,7 @@ public:
   }
   void execute() {
     for (int i = 0; i < RS_SIZE; i++) {
-      if (old_data[i].busy && old_data[i].Qj == 0 && old_data[i].Qk == 0 &&
-          old_data[i].wait_cycles) {
+      if (check_ready(i) && old_data[i].wait_cycles) {
         new_data[i].wait_cycles--;
       }
     }
@@ -78,9 +79,6 @@ public:
   uint32_t get_Vk(int idx) const { return old_data[idx].Vk; }
   DecodedIns get_inst(int idx) const { return old_data[idx].inst; }
   void remove(int idx) { new_data[idx].busy = false; }
-  bool check_ready(int idx) const {
-    return (old_data[idx].busy && !old_data[idx].Qj && !old_data[idx].Qk);
-  }
   bool check_done(int idx) const {
     return (check_ready(idx) && !old_data[idx].wait_cycles);
   }
